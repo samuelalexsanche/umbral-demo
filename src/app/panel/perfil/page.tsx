@@ -21,19 +21,19 @@ export default function Perfil() {
   return (
     <Guard roles={["org_admin"]}>
       <PageHead title="Perfil de la inmobiliaria" sub="Lo que ve el comprador en tu página pública y lo que usa tu agente de IA." actions={<Button variant="outline" href={orgHref(org)}>Ver perfil público</Button>} />
-      <div className="mx-auto grid max-w-3xl gap-6">
+      <div className="mx-auto grid max-w-3xl gap-6 [&>*]:min-w-0">
         <section className="grid gap-4 rounded-[14px] border border-line bg-card p-5">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <OrgLogo org={f} size={64} />
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
               <p className="text-sm font-semibold text-ink-2">Color de marca</p>
-              <div className="flex gap-2">{COLORS.map((c) => <button key={c} aria-label={`Color ${c}`} aria-pressed={f.color === c} onClick={() => set("color", c)} className={cx("press size-8 rounded-full ring-offset-2", f.color === c && "ring-2 ring-ink")} style={{ background: c }} />)}</div>
+              <div className="flex flex-wrap gap-2">{COLORS.map((c) => <button key={c} aria-label={`Color ${c}`} aria-pressed={f.color === c} onClick={() => set("color", c)} className={cx("press size-8 rounded-full ring-offset-2", f.color === c && "ring-2 ring-ink")} style={{ background: c }} />)}</div>
             </div>
           </div>
           <Field label="Frase principal" htmlFor="p-t"><Input id="p-t" value={f.tagline} onChange={(e) => set("tagline", e.target.value)} maxLength={120} /></Field>
           <Field label="Descripción" htmlFor="p-d"><Textarea id="p-d" rows={4} value={f.description} onChange={(e) => set("description", e.target.value)} /></Field>
         </section>
-        <section className="grid gap-4 rounded-[14px] border border-line bg-card p-5 sm:grid-cols-2">
+        <section className="grid gap-4 rounded-[14px] border border-line bg-card p-5 sm:grid-cols-2 [&>*]:min-w-0">
           <Field label="Teléfono" htmlFor="p-ph"><Input id="p-ph" value={f.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
           <Field label="Correo" htmlFor="p-em"><Input id="p-em" value={f.email} onChange={(e) => set("email", e.target.value)} /></Field>
           <Field label="Dirección de la oficina de ventas" htmlFor="p-ad"><Input id="p-ad" value={f.address} onChange={(e) => set("address", e.target.value)} /></Field>
