@@ -5,7 +5,7 @@ import { Bed, Bathtub, Car, Ruler, Stack, Tree, SealCheck, Heart, WhatsappLogo, 
 import { addView, can, useDB, useSessionUser } from "@/lib/db";
 import { available, devHref, isSeededListing, orgHref, orgOf, devOf, userOf } from "@/lib/queries";
 import { CREDITS } from "@/lib/seed";
-import { asset, baths, deliveryLabel, money, TYPE_LABEL, waLink } from "@/lib/format";
+import { asset, baths, bathsLabel, deliveryLabel, money, TYPE_LABEL, waLink } from "@/lib/format";
 import { toggleFav, useFavs } from "@/lib/favs";
 import { Avatar, Badge, Button, Dialog, Empty, OrgLogo } from "../ui";
 import ListingCard from "./ListingCard";
@@ -42,7 +42,7 @@ export default function ListingDetail({ id }: { id: string }) {
   const sold = l.status === "vendido";
   const specs = [
     { i: Bed, t: `${l.bedrooms} ${l.bedrooms === 1 ? "recámara" : "recámaras"}` },
-    { i: Bathtub, t: `${baths(l.bathrooms)} baños` },
+    { i: Bathtub, t: `${bathsLabel(l.bathrooms)}` },
     { i: Car, t: `${l.parking} ${l.parking === 1 ? "estacionamiento" : "estacionamientos"}` },
     { i: Ruler, t: `${l.m2Built} m² construidos` },
     ...(l.m2Land ? [{ i: Tree, t: `${l.m2Land} m² de terreno` }] : []),

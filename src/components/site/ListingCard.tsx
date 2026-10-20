@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Heart, SealCheck, Bed, Bathtub, Ruler } from "@phosphor-icons/react";
 import type { Listing, Org } from "@/lib/types";
-import { asset, baths, creditName, money, monthYear } from "@/lib/format";
+import { asset, baths, bathsLabel, creditName, money, monthYear } from "@/lib/format";
 import { toggleFav, useFavs } from "@/lib/favs";
 import { Badge, OrgLogo, cx } from "../ui";
 
@@ -66,7 +66,7 @@ export default function ListingCard({
         <p className="text-sm text-ink-2">{l.colonia}, {l.municipio}</p>
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-2" aria-label="Características">
           <li className="inline-flex items-center gap-1.5"><Bed size={16} /> {l.bedrooms} rec</li>
-          <li className="inline-flex items-center gap-1.5"><Bathtub size={16} /> {baths(l.bathrooms)} baños</li>
+          <li className="inline-flex items-center gap-1.5"><Bathtub size={16} /> {bathsLabel(l.bathrooms)}</li>
           <li className="inline-flex items-center gap-1.5"><Ruler size={16} /> {l.m2Built} m²</li>
         </ul>
         {!compact && (

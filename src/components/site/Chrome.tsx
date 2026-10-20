@@ -59,11 +59,13 @@ export function SiteHeader() {
             <Heart size={21} />
             {mounted && favs.length > 0 && <span className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-brick px-1 text-[10px] font-bold leading-4 text-white">{favs.length}</span>}
           </Link>
-          {mounted && me ? (
-            <Button href="/panel/" variant="dark" size="sm" className="hidden sm:inline-flex"><UserCircle size={18} /> Mi panel</Button>
-          ) : (
-            <Button href="/acceso/" variant="outline" size="sm" className="hidden sm:inline-flex">Acceso para inmobiliarias</Button>
-          )}
+          <span className="hidden sm:block">
+            {mounted && me ? (
+              <Button href="/panel/" variant="dark" size="sm"><UserCircle size={18} /> Mi panel</Button>
+            ) : (
+              <Button href="/acceso/" variant="outline" size="sm">Acceso para inmobiliarias</Button>
+            )}
+          </span>
           <button className="press grid size-10 place-items-center rounded-full hover:bg-sunk lg:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={open ? "Cerrar menú" : "Abrir menú"}>
             {open ? <X size={22} /> : <List size={22} />}
           </button>

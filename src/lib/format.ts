@@ -38,6 +38,7 @@ export function relTime(iso: string) {
 }
 
 export const baths = (n: number) => (Number.isInteger(n) ? `${n}` : `${Math.floor(n)} ½`);
+export const bathsLabel = (n: number) => `${baths(n)} ${n === 1 ? "baño" : "baños"}`;
 
 export function specLine(l: Pick<Listing, "bedrooms" | "bathrooms" | "parking" | "m2Built">) {
   return `${l.bedrooms} rec · ${baths(l.bathrooms)} baños · ${l.m2Built} m²`;
