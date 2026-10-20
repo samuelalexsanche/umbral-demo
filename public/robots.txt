@@ -1,0 +1,5 @@
+# Versión de demostración: no se indexa. En producción, cambiar a "Allow: /" y conservar el Sitemap.
+User-agent: *
+Disallow: /
+
+Sitemap: https://samuelalexsanche.github.io/umbral-demo/sitemap.xml

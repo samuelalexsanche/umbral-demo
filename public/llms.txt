@@ -1,0 +1,17 @@
+# Umbral
+
+> Escaparate de vivienda nueva en la zona metropolitana de Guadalajara (Guadalajara, Zapopan, Tlaquepaque, Tlajomulco). Cada casa o departamento lo publica su desarrolladora o inmobiliaria con perfil propio, asesor responsable y créditos aceptados (Infonavit, Fovissste, Cofinavit, Unamos Créditos, crédito bancario, contado). Versión de demostración: empresas y precios ficticios.
+
+## Páginas principales
+- [Inmuebles](https://samuelalexsanche.github.io/umbral-demo/inmuebles/): buscador con filtros por crédito, municipio, precio, recámaras, baños, estacionamientos, entrega y amenidades.
+- [Desarrolladoras e inmobiliarias](https://samuelalexsanche.github.io/umbral-demo/desarrolladoras/): perfiles con inventario, desarrollos, créditos y tiempo de respuesta.
+- [Guía de créditos](https://samuelalexsanche.github.io/umbral-demo/creditos/): qué es cada crédito, quién puede usarlo y cuántos inmuebles lo aceptan.
+- [Para desarrolladores](https://samuelalexsanche.github.io/umbral-demo/publica-tus-desarrollos/): cómo publicar desarrollos en la plataforma.
+
+## Desarrollos
+- [Bosque Arcada](https://samuelalexsanche.github.io/umbral-demo/desarrollo/bosque-arcada/): casas en El Bajío, Zapopan. Entrega inmediata.
+- [Lumen Providencia](https://samuelalexsanche.github.io/umbral-demo/desarrollo/lumen-providencia/): departamentos en preventa en Providencia, Guadalajara.
+- [Nativa Tlajomulco](https://samuelalexsanche.github.io/umbral-demo/desarrollo/nativa-tlajomulco/): casas para Infonavit y Fovissste en Tlajomulco de Zúñiga.
+- [Cantera Residencial](https://samuelalexsanche.github.io/umbral-demo/desarrollo/cantera-residencial/): privada de casas en Tlaquepaque.
+- [Mezquite Valle](https://samuelalexsanche.github.io/umbral-demo/desarrollo/mezquite-valle/): casas en preventa en Zapopan norte.
+- [Torre Mezquite Americana](https://samuelalexsanche.github.io/umbral-demo/desarrollo/torre-mezquite-americana/): departamentos en la colonia Americana, Guadalajara.
