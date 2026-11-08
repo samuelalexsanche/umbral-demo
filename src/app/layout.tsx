@@ -9,9 +9,9 @@ const sans = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE + "/"),
-  title: { default: "Umbral · Casas nuevas en Guadalajara de desarrolladores verificados", template: "%s · Umbral" },
+  title: { default: "Umbral · Departamentos nuevos en Guadalajara de desarrolladoras verificadas", template: "%s · Umbral" },
   description:
-    "Encuentra casas y departamentos nuevos en Guadalajara, Zapopan, Tlajomulco y Tlaquepaque. Filtra por el crédito que ya tienes (Infonavit, Fovissste, bancario) y habla directo con el asesor del desarrollo.",
+    "Departamentos nuevos en Guadalajara y Zapopan de desarrolladoras verificadas. Compara tasas bancarias, calcula tu mensualidad y habla con un asesor aprobado.",
   applicationName: "Umbral",
   robots: { index: false, follow: false },
   openGraph: { type: "website", locale: "es_MX", siteName: "Umbral", images: [{ url: "img/og.jpg", width: 1200, height: 630 }] },

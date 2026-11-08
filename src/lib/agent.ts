@@ -17,7 +17,7 @@ export function buildPayload(db: DB, org: Org, messages: ChatMsg[], context?: st
   return {
     org: {
       name: org.name,
-      kind: org.kind,
+      kind: "desarrolladora",
       agentName: org.agent.name,
       description: org.description,
       phone: org.phone,

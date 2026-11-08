@@ -12,7 +12,7 @@ export default function RequestForm() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
-    if (f.company.trim().length < 2) er.company = "Escribe el nombre de tu desarrolladora o inmobiliaria.";
+    if (f.company.trim().length < 2) er.company = "Escribe el nombre de tu desarrolladora.";
     if (f.name.trim().length < 2) er.name = "Escribe tu nombre.";
     if (f.phone.replace(/\D/g, "").length < 10) er.phone = "Escribe un teléfono de 10 dígitos.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email)) er.email = "Revisa el correo.";
@@ -26,13 +26,13 @@ export default function RequestForm() {
       <div className="grid gap-3 rounded-[18px] border border-line bg-card p-8 text-center">
         <CheckCircle size={44} weight="fill" className="mx-auto text-ok" />
         <p className="font-display text-2xl font-semibold">Solicitud recibida</p>
-        <p className="text-ink-2">El equipo de Umbral te contactará para agendar la demo. La solicitud ya aparece en el panel del administrador general.</p>
+        <p className="text-ink-2">El equipo de Umbral revisará tu solicitud y te contactará con las condiciones para colocar tu inventario.</p>
       </div>
     );
   return (
     <form onSubmit={submit} noValidate className="grid gap-4 rounded-[18px] border border-line bg-card p-6 sm:p-8">
-      <p className="font-display text-2xl font-semibold">Solicitar una demo</p>
-      <Field label="Desarrolladora o inmobiliaria" htmlFor="r-co" error={err.company}><Input id="r-co" value={f.company} onChange={set("company")} aria-invalid={!!err.company} /></Field>
+      <p className="font-display text-2xl font-semibold">Solicitar información</p>
+      <Field label="Desarrolladora" htmlFor="r-co" error={err.company}><Input id="r-co" value={f.company} onChange={set("company")} aria-invalid={!!err.company} /></Field>
       <Field label="Tu nombre" htmlFor="r-n" error={err.name}><Input id="r-n" autoComplete="name" value={f.name} onChange={set("name")} aria-invalid={!!err.name} /></Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Teléfono" htmlFor="r-p" error={err.phone}><Input id="r-p" type="tel" autoComplete="tel" value={f.phone} onChange={set("phone")} aria-invalid={!!err.phone} /></Field>

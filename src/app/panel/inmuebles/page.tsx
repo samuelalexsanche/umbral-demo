@@ -4,8 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { PencilSimple, Eye, Trash, Pause, Play, CheckCircle, Copy } from "@phosphor-icons/react";
 import { can, deleteListing, saveListing, setListingStatus, useDB, useSessionUser, visibleListings } from "@/lib/db";
-import { listingHref, orgOf, userOf } from "@/lib/queries";
-import { asset, money, relTime } from "@/lib/format";
+import { listingHref, orgOf } from "@/lib/queries";
+import { asset, priceLabel, relTime } from "@/lib/format";
 import type { Listing } from "@/lib/types";
 import { Badge, Button, Dialog, Empty, Input, Select } from "@/components/ui";
 import { PageHead, STATUS } from "@/components/panel/Shell";
@@ -30,9 +30,9 @@ export default function Inmuebles() {
   return (
     <div>
       <PageHead
-        title={me.role === "colaborador" ? "Mis borradores" : me.role === "asesor" ? "Mis inmuebles" : "Inmuebles"}
-        sub={me.role === "colaborador" ? "Crea borradores y envíalos a revisión. Tu asesora los publica." : `${all.length} inmuebles en total.`}
-        actions={<Button href="/panel/inmuebles/editar/">{me.role === "colaborador" ? "Nuevo borrador" : "Publicar inmueble"}</Button>}
+        title="Inmuebles"
+        sub={`${all.length} inmuebles en total. Precios, disponibilidad y condiciones que cambies aquí se ven al momento en el sitio y en el portal de asesores.`}
+        actions={<Button href="/panel/inmuebles/editar/">Publicar inmueble</Button>}
       />
       <div className="mb-4 flex flex-wrap gap-2">
         <Input aria-label="Buscar" placeholder="Buscar por nombre" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" />
@@ -47,7 +47,7 @@ export default function Inmuebles() {
         <div className="overflow-x-auto rounded-[14px] border border-line bg-card">
           <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="border-b border-line text-ink-3">
-              <tr>{["Inmueble", "Precio", "Estado", "Asesor", "Vistas", "Actualizado", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
+              <tr>{["Inmueble", "Precio", "Estado", "Disponibles", "Vistas", "Actualizado", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
             </thead>
             <tbody>
               {list.map((l) => {
@@ -57,26 +57,26 @@ export default function Inmuebles() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={asset(l.images[0] ?? "/img/bosque-arcada-fachada.jpg")} alt="" className="h-12 w-16 shrink-0 rounded-[8px] object-cover" />
+                        <img src={asset(l.images[0] ?? "")} alt="" className="h-12 w-16 shrink-0 rounded-[8px] object-cover" />
                         <div className="min-w-0">
                           <p className="truncate font-semibold">{l.title}</p>
                           <p className="text-ink-3">{me.role === "superadmin" ? `${orgOf(db, l.orgId)?.name} · ` : ""}{l.colonia}, {l.municipio}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-semibold tabular">{money(l.price)}</td>
-                    <td className="px-4 py-3"><Badge tone={STATUS[l.status].tone}>{STATUS[l.status].label}</Badge>{l.reviewNote && <p className="mt-1 max-w-[180px] text-xs text-warn">{l.reviewNote}</p>}</td>
-                    <td className="px-4 py-3 text-ink-2">{userOf(db, l.asesorId)?.name ?? "Sin asignar"}</td>
+                    <td className="px-4 py-3 font-semibold tabular">{priceLabel(l.price)}</td>
+                    <td className="px-4 py-3"><Badge tone={STATUS[l.status].tone}>{STATUS[l.status].label}</Badge></td>
+                    <td className="px-4 py-3 tabular text-ink-2">{l.unitsAvailable ?? "-"}{l.unitsTotal ? ` de ${l.unitsTotal}` : ""}</td>
                     <td className="px-4 py-3 tabular text-ink-2">{l.views}</td>
                     <td className="px-4 py-3 text-ink-3">{relTime(l.updatedAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
                         <IconBtn label="Ver ficha" href={listingHref(l)}><Eye size={17} /></IconBtn>
                         {edit && <IconBtn label="Editar" href={`/panel/inmuebles/editar/?id=${l.id}`}><PencilSimple size={17} /></IconBtn>}
-                        {edit && can.publishDirectly(me) && l.status === "publicado" && <IconBtn label="Pausar" onClick={() => { setListingStatus(me, l.id, "pausado"); toast("Inmueble pausado"); }}><Pause size={17} /></IconBtn>}
-                        {edit && can.publishDirectly(me) && (l.status === "pausado" || l.status === "borrador") && <IconBtn label="Publicar" onClick={() => { setListingStatus(me, l.id, "publicado"); toast.success("Inmueble publicado"); }}><Play size={17} /></IconBtn>}
-                        {edit && can.publishDirectly(me) && l.status === "publicado" && <IconBtn label="Marcar vendido" onClick={() => { setListingStatus(me, l.id, "vendido"); toast("Marcado como vendido"); }}><CheckCircle size={17} /></IconBtn>}
-                        {me.role !== "colaborador" && <IconBtn label="Duplicar" onClick={() => duplicate(l)}><Copy size={17} /></IconBtn>}
+                        {edit && l.status === "publicado" && <IconBtn label="Pausar" onClick={() => { setListingStatus(me, l.id, "pausado"); toast("Inmueble pausado"); }}><Pause size={17} /></IconBtn>}
+                        {edit && (l.status === "pausado" || l.status === "borrador") && <IconBtn label="Publicar" onClick={() => { setListingStatus(me, l.id, "publicado"); toast.success("Inmueble publicado"); }}><Play size={17} /></IconBtn>}
+                        {edit && l.status === "publicado" && <IconBtn label="Marcar vendido" onClick={() => { setListingStatus(me, l.id, "vendido"); toast("Marcado como vendido"); }}><CheckCircle size={17} /></IconBtn>}
+                        {edit && <IconBtn label="Duplicar" onClick={() => duplicate(l)}><Copy size={17} /></IconBtn>}
                         {edit && <IconBtn label="Eliminar" onClick={() => setDel(l)}><Trash size={17} /></IconBtn>}
                       </div>
                     </td>

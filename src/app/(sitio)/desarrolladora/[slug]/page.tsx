@@ -12,11 +12,11 @@ type P = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const { slug } = await params;
   const o = SEED.orgs.find((x) => x.slug === slug)!;
-  const n = SEED.listings.filter((l) => l.orgId === o.id && l.status === "publicado").length;
+  const n = SEED.developments.filter((d) => d.orgId === o.id).length;
   return {
-    title: `${o.name}: ${n} inmuebles en ${o.municipios.join(" y ")}`,
-    description: `${o.tagline} Perfil de ${o.name} con su inventario, desarrollos, créditos aceptados y asesores.`,
-    alternates: { canonical: `inmobiliaria/${o.slug}/` },
+    title: `${o.name}: ${n} desarrollos en ${o.municipios.join(" y ")}`,
+    description: `${o.tagline} Historia, inventario actual, avances de obra, lanzamientos y calificación de confianza de ${o.name}.`,
+    alternates: { canonical: `desarrolladora/${o.slug}/` },
   };
 }
 
@@ -28,14 +28,13 @@ export default async function Page({ params }: P) {
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          "@type": "RealEstateAgent",
+          "@type": "Organization",
           name: o.name,
-          url: `${SITE}/inmobiliaria/${o.slug}/`,
+          url: `${SITE}/desarrolladora/${o.slug}/`,
           description: o.description,
           foundingDate: String(o.since),
           areaServed: o.municipios.map((m) => ({ "@type": "City", name: m })),
           address: { "@type": "PostalAddress", addressLocality: o.municipios[0], addressRegion: "Jalisco", addressCountry: "MX" },
-          openingHours: o.hours,
         }}
       />
       <OrgProfile id={o.id} />

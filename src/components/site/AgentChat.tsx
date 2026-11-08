@@ -8,7 +8,7 @@ import { useDB } from "@/lib/db";
 import { OrgLogo, cx } from "../ui";
 import ContactDialog from "./ContactDialog";
 
-/** Asistente de IA de UNA inmobiliaria, con su base de conocimiento e inventario. */
+/** Asistente de IA de UNA desarrolladora, con su base de conocimiento e inventario. */
 export default function AgentChat({ org, listing, context, inline }: { org: Org; listing?: Listing; context?: string; inline?: boolean }) {
   const db = useDB();
   const reduce = useReducedMotion();

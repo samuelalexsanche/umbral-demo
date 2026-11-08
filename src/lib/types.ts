@@ -1,16 +1,19 @@
-export type Role = "superadmin" | "org_admin" | "asesor" | "colaborador";
+export type Role = "superadmin" | "desarrolladora" | "asesor";
 
-export type CreditId = "contado" | "bancario" | "infonavit" | "fovissste" | "cofinavit" | "unamos";
+/** Interno: equipo de la plataforma, recibe prospectos. Externo: aprobado por el administrador, solo consulta y cotiza. */
+export type AsesorTipo = "interno" | "externo";
+
+export type CreditId = "contado" | "bancario";
 
 export type PropertyType = "casa" | "departamento" | "townhouse" | "terreno";
 
-export type ListingStatus = "borrador" | "revision" | "publicado" | "pausado" | "vendido";
+export type ListingStatus = "borrador" | "publicado" | "pausado" | "vendido";
 
 export type Delivery = "entrega-inmediata" | "preventa";
 
 export type LeadStatus = "nuevo" | "contactado" | "cita" | "apartado" | "cerrado" | "descartado";
 
-export type LeadSource = "ficha" | "agente" | "perfil" | "desarrollo";
+export type LeadSource = "ficha" | "agente" | "perfil" | "desarrollo" | "credito";
 
 export interface Credit {
   id: CreditId;
@@ -35,25 +38,41 @@ export interface AgentConfig {
   notes: string;
 }
 
+export interface TrustCriterion {
+  id: string;
+  label: string;
+  ok: boolean;
+}
+
+/** Desarrolladora. Se conserva el nombre `Org` en el código para no tocar cada pantalla. */
 export interface Org {
   id: string;
   slug: string;
   name: string;
-  kind: "desarrolladora" | "inmobiliaria";
   verified: boolean;
   status: "activa" | "suspendida";
   initials: string;
   color: string;
+  logo?: string;
+  cover?: string;
   tagline: string;
   description: string;
+  history: string;
   since: number;
+  projectsDone?: number;
+  unitsDelivered?: number;
   municipios: string[];
   phone: string;
   email: string;
+  website?: string;
   address: string;
   hours: string;
   credits: CreditId[];
+  paymentTerms: string;
   responseMinutes: number;
+  /** Sello verde: lo otorga el administrador cuando se cumplen los criterios. */
+  seal: boolean;
+  trust: TrustCriterion[];
   agent: AgentConfig;
   createdAt: string;
 }
@@ -66,15 +85,20 @@ export interface Development {
   kind: "fraccionamiento" | "torre" | "privada";
   colonia: string;
   municipio: string;
+  address?: string;
   lat: number;
   lng: number;
   description: string;
+  typologies?: string;
+  priceFrom?: number;
   amenities: string[];
   delivery: Delivery;
   deliveryDate?: string;
   progress: number;
   totalUnits: number;
+  paymentTerms?: string;
   images: string[];
+  launch?: boolean;
   createdAt: string;
 }
 
@@ -84,10 +108,8 @@ export interface Listing {
   title: string;
   orgId: string;
   developmentId?: string;
-  asesorId: string;
   createdBy: string;
   status: ListingStatus;
-  reviewNote?: string;
   type: PropertyType;
   price: number;
   bedrooms: number;
@@ -101,6 +123,7 @@ export interface Listing {
   unitsAvailable?: number;
   unitsTotal?: number;
   credits: CreditId[];
+  paymentTerms?: string;
   amenities: string[];
   features: string[];
   description: string;
@@ -121,10 +144,15 @@ export interface User {
   email: string;
   password: string;
   role: Role;
+  /** Solo para usuarios de una desarrolladora. */
   orgId?: string;
-  managerId?: string;
+  asesorTipo?: AsesorTipo;
+  company?: string;
   phone: string;
+  mobile?: string;
   title: string;
+  photo?: string;
+  bio?: string;
   active: boolean;
   createdBy?: string;
   createdAt: string;
@@ -139,14 +167,16 @@ export interface LeadNote {
 
 export interface Lead {
   id: string;
-  orgId: string;
-  asesorId: string;
+  orgId?: string;
+  /** Asesor interno al que la plataforma asignó el prospecto. */
+  asesorId?: string;
   listingId?: string;
   developmentId?: string;
   name: string;
   phone: string;
   email: string;
   credit?: CreditId;
+  bankId?: string;
   message: string;
   source: LeadSource;
   status: LeadStatus;
@@ -163,6 +193,7 @@ export interface Activity {
   text: string;
 }
 
+/** Desarrolladora que pide colocar su inventario. Sujeto a condiciones. */
 export interface PlatformRequest {
   id: string;
   company: string;
@@ -170,6 +201,89 @@ export interface PlatformRequest {
   phone: string;
   email: string;
   units: string;
+  createdAt: string;
+}
+
+export type ApplicationStatus = "pendiente" | "aprobada" | "rechazada";
+
+/** Solicitud de un asesor para entrar a la plataforma. */
+export interface AdvisorApplication {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  experience: string;
+  zone: string;
+  message: string;
+  status: ApplicationStatus;
+  reviewedBy?: string;
+  reviewNote?: string;
+  userId?: string;
+  createdAt: string;
+}
+
+export interface BankRate {
+  id: string;
+  bank: string;
+  product: string;
+  rate: number;
+  cat?: number;
+  minDown: number;
+  maxYears: number;
+  notes: string;
+  updatedAt: string;
+}
+
+export type ArticleCategory = "mercado" | "financieras" | "proyectos" | "global" | "entrevista" | "avance" | "lanzamiento";
+
+/** Noticias de la plataforma y publicaciones de cada desarrolladora (noticias, avances de obra, lanzamientos). */
+export interface Article {
+  id: string;
+  slug: string;
+  category: ArticleCategory;
+  title: string;
+  summary: string;
+  body: string;
+  image?: string;
+  source?: string;
+  sourceUrl?: string;
+  author?: string;
+  orgId?: string;
+  developmentId?: string;
+  published: boolean;
+  date: string;
+  createdBy: string;
+}
+
+export type MaterialKind = "brochure" | "render" | "video" | "publicidad";
+
+export interface Material {
+  id: string;
+  orgId: string;
+  developmentId?: string;
+  kind: MaterialKind;
+  title: string;
+  url: string;
+  thumb?: string;
+  createdAt: string;
+}
+
+export type CourseKind = "curso" | "capacitacion" | "evento";
+
+export interface Course {
+  id: string;
+  kind: CourseKind;
+  title: string;
+  summary: string;
+  body: string;
+  orgId?: string;
+  developmentId?: string;
+  date?: string;
+  place?: string;
+  duration?: string;
+  url?: string;
+  published: boolean;
   createdAt: string;
 }
 
@@ -182,5 +296,12 @@ export interface DB {
   leads: Lead[];
   activity: Activity[];
   requests: PlatformRequest[];
+  applications: AdvisorApplication[];
+  banks: BankRate[];
+  articles: Article[];
+  materials: Material[];
+  courses: Course[];
   amenities: string[];
+  /** Turno del reparto de prospectos entre asesores internos. */
+  rr: number;
 }

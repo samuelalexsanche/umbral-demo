@@ -160,7 +160,7 @@ export default function SearchExplorer() {
             {(Object.keys(TYPE_LABEL) as PropertyType[]).map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
           </Select>
         </Group>
-        <Group label="Desarrolladora o inmobiliaria">
+        <Group label="Desarrolladora">
           <Select value={f.o} onChange={(e) => setF((x) => ({ ...x, o: e.target.value, d: "" }))}>
             <option value="">Todas</option>
             {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}

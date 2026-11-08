@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...fixed,
     ...SEED.listings.filter((l) => l.status === "publicado").map((l) => ({ url: `${SITE}/inmueble/${l.slug}/`, lastModified: l.updatedAt })),
-    ...SEED.orgs.map((o) => ({ url: `${SITE}/inmobiliaria/${o.slug}/`, lastModified: now })),
+    ...SEED.orgs.map((o) => ({ url: `${SITE}/desarrolladora/${o.slug}/`, lastModified: now })),
     ...SEED.developments.map((d) => ({ url: `${SITE}/desarrollo/${d.slug}/`, lastModified: now })),
   ];
 }

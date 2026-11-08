@@ -6,24 +6,27 @@ import { Heart, List, X, UserCircle, ArrowCounterClockwise } from "@phosphor-ico
 import { toast } from "sonner";
 import { useFavs } from "@/lib/favs";
 import { resetDemo, useSessionUser } from "@/lib/db";
+import { REMOTE } from "@/lib/backend";
 import { Button, Logo, cx } from "../ui";
 
 const NAV = [
   { href: "/inmuebles/", label: "Inmuebles" },
   { href: "/desarrolladoras/", label: "Desarrolladoras" },
   { href: "/creditos/", label: "Créditos" },
-  { href: "/publica-tus-desarrollos/", label: "Para desarrolladores" },
+  { href: "/noticias/", label: "Noticias" },
+  { href: "/asesores/", label: "Asesores" },
 ];
 
 export function DemoBanner() {
+  if (REMOTE) return null;
   return (
     <div className="bg-slate text-[13px] text-paper/85">
       <div className="mx-auto flex max-w-[1400px] items-center justify-center gap-3 px-4 py-1.5 text-center">
-        <span>Demo: inmobiliarias, personas y precios son ficticios. Lo que crees se guarda en este navegador.</span>
+        <span>Modo local de desarrollo: los datos se guardan en este navegador.</span>
         <button
           onClick={() => {
             resetDemo();
-            toast.success("Datos de la demo restablecidos");
+            toast.success("Datos locales restablecidos");
           }}
           className="press inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-paper underline-offset-2 hover:underline"
         >
@@ -63,7 +66,7 @@ export function SiteHeader() {
             {mounted && me ? (
               <Button href="/panel/" variant="dark" size="sm"><UserCircle size={18} /> Mi panel</Button>
             ) : (
-              <Button href="/acceso/" variant="outline" size="sm">Acceso para inmobiliarias</Button>
+              <Button href="/acceso/" variant="outline" size="sm">Acceso</Button>
             )}
           </span>
           <button className="press grid size-10 place-items-center rounded-full hover:bg-sunk lg:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={open ? "Cerrar menú" : "Abrir menú"}>
@@ -76,7 +79,7 @@ export function SiteHeader() {
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className="block border-b border-line py-3.5 font-display text-xl font-semibold">{n.label}</Link>
           ))}
-          <Link href={me ? "/panel/" : "/acceso/"} className="block py-3.5 font-display text-xl font-semibold text-brick">{me ? "Mi panel" : "Acceso para inmobiliarias"}</Link>
+          <Link href={me ? "/panel/" : "/acceso/"} className="block py-3.5 font-display text-xl font-semibold text-brick">{me ? "Mi panel" : "Acceso"}</Link>
         </nav>
       )}
     </header>
@@ -89,29 +92,31 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="grid content-start gap-4">
           <Logo light />
-          <p className="max-w-sm text-sm text-paper/70">Casas y departamentos nuevos del área metropolitana de Guadalajara, publicados por desarrolladoras e inmobiliarias con perfil propio y asesores identificados.</p>
+          <p className="max-w-sm text-sm text-paper/70">Departamentos nuevos del área metropolitana de Guadalajara, publicados por desarrolladoras aprobadas y atendidos por asesores aprobados.</p>
         </div>
         <div className="grid content-start gap-2.5 text-sm">
           <p className="font-semibold text-paper/50">Buscar</p>
-          <Link href="/inmuebles/?m=Zapopan" className="text-paper/85 hover:text-paper">Casas en Zapopan</Link>
+          <Link href="/inmuebles/?m=Zapopan" className="text-paper/85 hover:text-paper">Departamentos en Zapopan</Link>
           <Link href="/inmuebles/?m=Guadalajara" className="text-paper/85 hover:text-paper">Departamentos en Guadalajara</Link>
-          <Link href="/inmuebles/?c=infonavit" className="text-paper/85 hover:text-paper">Casas con Infonavit</Link>
+          <Link href="/inmuebles/?e=entrega-inmediata" className="text-paper/85 hover:text-paper">Entrega inmediata</Link>
           <Link href="/inmuebles/?e=preventa" className="text-paper/85 hover:text-paper">Preventas</Link>
         </div>
         <div className="grid content-start gap-2.5 text-sm">
           <p className="font-semibold text-paper/50">Umbral</p>
-          <Link href="/desarrolladoras/" className="text-paper/85 hover:text-paper">Desarrolladoras e inmobiliarias</Link>
-          <Link href="/creditos/" className="text-paper/85 hover:text-paper">Guía de créditos</Link>
-          <Link href="/publica-tus-desarrollos/" className="text-paper/85 hover:text-paper">Publica tus desarrollos</Link>
+          <Link href="/desarrolladoras/" className="text-paper/85 hover:text-paper">Desarrolladoras</Link>
+          <Link href="/creditos/" className="text-paper/85 hover:text-paper">Tasas y simulador</Link>
+          <Link href="/noticias/" className="text-paper/85 hover:text-paper">Noticias</Link>
         </div>
         <div className="grid content-start gap-2.5 text-sm">
-          <p className="font-semibold text-paper/50">Equipos de venta</p>
-          <Link href="/acceso/" className="text-paper/85 hover:text-paper">Acceso para inmobiliarias</Link>
+          <p className="font-semibold text-paper/50">Profesionales</p>
+          <Link href="/publica-tus-desarrollos/" className="text-paper/85 hover:text-paper">Para desarrolladores</Link>
+          <Link href="/asesores/" className="text-paper/85 hover:text-paper">Solicitud de asesores</Link>
+          <Link href="/acceso/" className="text-paper/85 hover:text-paper">Acceso</Link>
           <Link href="/guardados/" className="text-paper/85 hover:text-paper">Guardados y comparador</Link>
         </div>
       </div>
       <div className="border-t border-paper/10">
-        <p className="mx-auto max-w-[1400px] px-4 py-5 text-xs text-paper/50 sm:px-6">Versión de demostración. Precios, inventario y requisitos de crédito son orientativos y deben confirmarse con cada desarrolladora.</p>
+        <p className="mx-auto max-w-[1400px] px-4 py-5 text-xs text-paper/50 sm:px-6">Precios, inventario y tasas son informativos y los confirma la desarrolladora o el banco. El apartado se firma siempre con la desarrolladora.</p>
       </div>
     </footer>
   );

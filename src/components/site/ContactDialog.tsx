@@ -32,7 +32,6 @@ export default function ContactDialog({
   const [sent, setSent] = useState(false);
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const asesorId = asesor?.id ?? listing?.asesorId ?? "";
   const subject = listing ? listing.title : org.name;
 
   function submit(e: React.FormEvent) {
@@ -45,7 +44,6 @@ export default function ContactDialog({
     if (Object.keys(err).length) return;
     createLead({
       orgId: org.id,
-      asesorId,
       listingId: listing?.id,
       developmentId: developmentId ?? listing?.developmentId,
       name: form.name.trim(),
@@ -67,7 +65,7 @@ export default function ContactDialog({
         <div className="grid gap-4 text-center">
           <CheckCircle size={48} weight="fill" className="mx-auto text-ok" />
           <p className="text-ink-2">
-            {asesor ? `${asesor.name} de ${org.name}` : org.name} recibió tus datos. El tiempo de respuesta habitual de esta inmobiliaria es de {org.responseMinutes} minutos en horario de oficina.
+            Un asesor de Umbral recibió tus datos y te contactará para darte información de {subject}. El tiempo de respuesta habitual es de {org.responseMinutes} minutos en horario de oficina.
           </p>
           <p className="text-sm text-ink-3">Nunca te pediremos pagos por chat. El apartado se hace siempre en la oficina de ventas.</p>
           <Button variant="outline" href={waLink(waText)} external><WhatsappLogo size={18} /> Continuar por WhatsApp</Button>
@@ -107,7 +105,7 @@ export default function ContactDialog({
           </Field>
           {transcript && transcript.length > 0 && <p className="text-xs text-ink-3">El asesor verá también tu conversación con el asistente para no repetirte las preguntas.</p>}
           <Button type="submit" size="lg">Enviar al asesor</Button>
-          <p className="text-center text-xs text-ink-3">Tus datos solo los recibe {org.name}.</p>
+          <p className="text-center text-xs text-ink-3">Tus datos los recibe un asesor de Umbral y {org.name}. No los compartimos con nadie más.</p>
         </form>
       )}
     </Dialog>

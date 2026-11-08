@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const credits = l.credits.map((c) => CREDITS.find((x) => x.id === c)!.name).join(", ");
   return {
     title: `${l.title} · ${money(l.price)}`,
-    description: `${TYPE_LABEL[l.type]} de ${l.bedrooms} recámaras y ${l.m2Built} m² en ${l.colonia}, ${l.municipio}. ${deliveryLabel(l.delivery, l.deliveryDate)}. Acepta ${credits}. Publicado por ${org.name}.`,
+    description: `${TYPE_LABEL[l.type]} de ${l.bedrooms} recámaras${l.m2Built ? ` y ${l.m2Built} m²` : ""} en ${l.colonia}, ${l.municipio}. ${deliveryLabel(l.delivery, l.deliveryDate)}. Acepta ${credits}. Publicado por ${org.name}.`,
     alternates: { canonical: `inmueble/${l.slug}/` },
     openGraph: { images: [{ url: l.images[0].slice(1) }] },
   };
@@ -39,7 +39,7 @@ export default async function Page({ params }: P) {
           datePosted: l.createdAt,
           description: l.description,
           image: l.images.map((i) => SITE + i),
-          offers: { "@type": "Offer", price: l.price, priceCurrency: "MXN", availability: l.status === "vendido" ? "https://schema.org/SoldOut" : "https://schema.org/InStock", seller: { "@type": "RealEstateAgent", name: org.name, url: `${SITE}/inmobiliaria/${org.slug}/` } },
+          offers: { "@type": "Offer", price: l.price, priceCurrency: "MXN", availability: l.status === "vendido" ? "https://schema.org/SoldOut" : "https://schema.org/InStock", seller: { "@type": "Organization", name: org.name, url: `${SITE}/desarrolladora/${org.slug}/` } },
           about: {
             "@type": residence,
             numberOfRooms: l.bedrooms,

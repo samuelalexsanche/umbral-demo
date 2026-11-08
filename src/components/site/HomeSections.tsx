@@ -6,6 +6,7 @@ import { available, devHref, isSeededListing, orgHref, orgOf } from "@/lib/queri
 import { asset, deliveryLabel, moneyShort } from "@/lib/format";
 import { OrgLogo } from "../ui";
 import ListingCard from "./ListingCard";
+import { ArticleCard } from "./News";
 
 export function Featured() {
   const db = useDB();
@@ -26,7 +27,7 @@ export function Developments() {
     <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:scroll-px-6 sm:px-6 [scrollbar-width:none]">
       {devs.map((d) => {
         const org = orgOf(db, d.orgId)!;
-        const prices = available(db).filter((l) => l.developmentId === d.id).map((l) => l.price);
+        const prices = d.priceFrom ? [d.priceFrom] : available(db).filter((l) => l.developmentId === d.id).map((l) => l.price);
         return (
           <Link key={d.id} href={devHref(d)} className="lift zoom-img group relative w-[min(78vw,340px)] shrink-0 snap-start overflow-hidden rounded-[16px] bg-ink text-paper">
             <div className="aspect-[4/5] overflow-hidden">
@@ -62,7 +63,7 @@ export function OrgsRow() {
               <p className="flex items-center gap-1.5 truncate font-semibold">
                 {o.name} {o.verified && <SealCheck size={16} weight="fill" className="shrink-0 text-ok" aria-label="Verificada" />}
               </p>
-              <p className="text-sm text-ink-2">{n} inmuebles · responde en ~{o.responseMinutes} min</p>
+              <p className="text-sm text-ink-2">{db.developments.filter((d) => d.orgId === o.id).length} desarrollos · {n} inmuebles{o.seal ? " · Sello verde" : ""}</p>
             </div>
             <ArrowRight size={18} className="ml-auto shrink-0 text-ink-3" />
           </Link>
@@ -70,4 +71,10 @@ export function OrgsRow() {
       })}
     </div>
   );
+}
+
+export function LatestNews() {
+  const db = useDB();
+  const list = db.articles.filter((a) => a.published).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+  return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{list.map((a) => <ArticleCard key={a.id} a={a} />)}</div>;
 }

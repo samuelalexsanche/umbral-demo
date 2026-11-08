@@ -8,7 +8,7 @@ export default function Solicitudes() {
   const db = useDB();
   return (
     <Guard roles={["superadmin"]}>
-      <PageHead title="Solicitudes de desarrolladoras" sub="Empresas que pidieron una demo desde la página Para desarrolladores." />
+      <PageHead title="Solicitudes de desarrolladoras" sub="Desarrolladoras que pidieron colocar su inventario desde la página Para desarrolladores. El alta está sujeta a condiciones." />
       {db.requests.length === 0 ? (
         <Empty title="Sin solicitudes todavía" action={<Button variant="outline" href="/publica-tus-desarrollos/#solicitud">Ver el formulario</Button>}>Llena el formulario de la página para desarrolladores y la solicitud aparecerá aquí.</Empty>
       ) : (
@@ -22,7 +22,7 @@ export default function Solicitudes() {
                   <td className="px-4 py-3 text-ink-2">{r.name} · {r.phone} · {r.email}</td>
                   <td className="px-4 py-3">{r.units || "-"}</td>
                   <td className="px-4 py-3 text-ink-3">{relTime(r.createdAt)}</td>
-                  <td className="px-4 py-3 text-right"><Button size="sm" href={`/panel/inmobiliarias/?nueva=${encodeURIComponent(r.company)}`}>Dar de alta</Button></td>
+                  <td className="px-4 py-3 text-right"><Button size="sm" href={`/panel/desarrolladoras/?nueva=${encodeURIComponent(r.company)}`}>Dar de alta</Button></td>
                 </tr>
               ))}
             </tbody>

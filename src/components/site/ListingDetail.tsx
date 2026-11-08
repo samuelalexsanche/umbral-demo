@@ -3,11 +3,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bed, Bathtub, Car, Ruler, Stack, Tree, SealCheck, Heart, WhatsappLogo, Clock, ArrowRight, Images, CheckCircle, Warning } from "@phosphor-icons/react";
 import { addView, can, useDB, useSessionUser } from "@/lib/db";
-import { available, devHref, isSeededListing, orgHref, orgOf, devOf, userOf } from "@/lib/queries";
+import { available, devHref, isSeededListing, orgHref, orgOf, devOf } from "@/lib/queries";
 import { CREDITS } from "@/lib/seed";
-import { asset, baths, bathsLabel, deliveryLabel, money, TYPE_LABEL, waLink } from "@/lib/format";
+import { asset, bathsLabel, deliveryLabel, money, priceLabel, TYPE_LABEL, waLink } from "@/lib/format";
 import { toggleFav, useFavs } from "@/lib/favs";
-import { Avatar, Badge, Button, Dialog, Empty, OrgLogo } from "../ui";
+import { Badge, Button, Dialog, Empty, OrgLogo } from "../ui";
 import ListingCard from "./ListingCard";
 import MapView from "./MapView";
 import MortgageCalc from "./MortgageCalc";
@@ -31,11 +31,10 @@ export default function ListingDetail({ id }: { id: string }) {
 
   const org = orgOf(db, l.orgId)!;
   const dev = devOf(db, l.developmentId);
-  const asesor = userOf(db, l.asesorId);
   const isPublic = (l.status === "publicado" || l.status === "vendido") && org.status === "activa";
-  const canPreview = me ? can.editListing(me, l) || can.review(me, l) : false;
+  const canPreview = me ? can.editListing(me, l) : false;
   if (!isPublic && !canPreview)
-    return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este inmueble no está publicado" action={<Button href="/inmuebles/">Ver inmuebles disponibles</Button>}>Está en revisión o en borrador de su desarrolladora.</Empty></div>;
+    return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este inmueble no está publicado" action={<Button href="/inmuebles/">Ver inmuebles disponibles</Button>}>Está en borrador o pausado por su desarrolladora.</Empty></div>;
 
   const fav = favs.includes(l.id);
   const similar = available(db).filter((x) => x.id !== l.id && (x.municipio === l.municipio || Math.abs(x.price - l.price) / l.price < 0.25)).slice(0, 3);
@@ -131,7 +130,14 @@ export default function ListingDetail({ id }: { id: string }) {
             </section>
           )}
 
-          {(l.credits.includes("bancario") || l.credits.includes("cofinavit")) && !sold && (
+          {l.paymentTerms && (
+            <section className="grid gap-3">
+              <h2 className="font-display text-2xl font-semibold tracking-tight">Condiciones de pago</h2>
+              <p className="text-[17px] text-ink-2 text-pretty">{l.paymentTerms}</p>
+            </section>
+          )}
+
+          {l.credits.includes("bancario") && l.price > 0 && !sold && (
             <section className="grid gap-4">
               <h2 className="font-display text-2xl font-semibold tracking-tight">¿Cuánto pagaría al mes?</h2>
               <MortgageCalc price={l.price} />
@@ -169,7 +175,7 @@ export default function ListingDetail({ id }: { id: string }) {
               <OrgLogo org={org} size={56} />
               <div>
                 <p className="flex items-center gap-1.5 font-display text-xl font-semibold">{org.name} {org.verified && <SealCheck size={20} weight="fill" className="text-ok" aria-label="Verificada" />}</p>
-                <p className="text-sm text-ink-2">{org.kind === "desarrolladora" ? "Desarrolladora" : "Inmobiliaria"} desde {org.since} · responde en ~{org.responseMinutes} min</p>
+                <p className="text-sm text-ink-2">Desarrolladora desde {org.since}{org.seal ? " · Sello verde de confianza" : ""} · responde en ~{org.responseMinutes} min</p>
               </div>
               <Button href={orgHref(org)} variant="outline" size="sm">Ver perfil</Button>
             </div>
@@ -179,7 +185,8 @@ export default function ListingDetail({ id }: { id: string }) {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="grid gap-5 rounded-[18px] border border-line bg-card p-6 shadow-[var(--shadow-card)]">
             <div>
-              <p className="font-display text-[2.4rem] font-semibold leading-none tracking-tight tabular">{money(l.price)}</p>
+              <p className="text-sm text-ink-3">{l.delivery === "preventa" ? "Precio de preventa desde" : "Precio"}</p>
+              <p className="font-display text-[2.4rem] font-semibold leading-none tracking-tight tabular">{priceLabel(l.price)}</p>
               {l.unitsAvailable !== undefined && (
                 <p className={`mt-2 text-sm font-semibold ${l.unitsAvailable <= 5 ? "text-brick" : "text-ink-2"}`}>
                   {sold ? "Sin unidades disponibles" : `${l.unitsAvailable} de ${l.unitsTotal} unidades disponibles`}
@@ -187,16 +194,7 @@ export default function ListingDetail({ id }: { id: string }) {
               )}
               <p className="mt-1 text-xs text-ink-3">Actualizado por {org.name} el {new Date(l.updatedAt).toLocaleDateString("es-MX", { day: "numeric", month: "long" })}</p>
             </div>
-            {asesor && (
-              <div className="flex items-center gap-3 border-y border-line py-4">
-                <Avatar name={asesor.name} size={48} />
-                <div className="text-sm">
-                  <p className="font-semibold">{asesor.name}</p>
-                  <p className="text-ink-2">{asesor.title}</p>
-                  <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-3"><Clock size={13} /> Responde en ~{org.responseMinutes} min</p>
-                </div>
-              </div>
-            )}
+            <p className="inline-flex items-center gap-1.5 border-y border-line py-3 text-sm text-ink-2"><Clock size={15} /> Un asesor de Umbral te responde en ~{org.responseMinutes} min</p>
             <Button size="lg" onClick={() => setContact(true)} disabled={sold}>Contactar al asesor</Button>
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" href={waLink(`Hola, vi ${l.title} (${money(l.price)}) en Umbral y quiero más información.`)} external><WhatsappLogo size={18} /> WhatsApp</Button>
@@ -217,7 +215,7 @@ export default function ListingDetail({ id }: { id: string }) {
       )}
 
       <div className="fixed inset-x-0 bottom-0 z-[1150] flex items-center justify-between gap-3 border-t border-line bg-card/95 px-4 py-3 backdrop-blur lg:hidden">
-        <p className="font-display text-xl font-semibold tabular">{money(l.price)}</p>
+        <p className="font-display text-xl font-semibold tabular">{priceLabel(l.price)}</p>
         <Button onClick={() => setContact(true)} disabled={sold}>Contactar al asesor</Button>
       </div>
 
@@ -229,7 +227,7 @@ export default function ListingDetail({ id }: { id: string }) {
           ))}
         </div>
       </Dialog>
-      <ContactDialog open={contact} onClose={() => setContact(false)} org={org} asesor={asesor} listing={l} source="ficha" />
+      <ContactDialog open={contact} onClose={() => setContact(false)} org={org} listing={l} source="ficha" />
       <AgentChat org={org} listing={l} context={`${l.title} (${money(l.price)}) en ${l.colonia}, ${l.municipio}`} />
     </div>
   );

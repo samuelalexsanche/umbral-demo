@@ -2,13 +2,15 @@ import type { CreditId, Delivery, Listing, PropertyType } from "./types";
 import { CREDITS } from "./seed";
 
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-export const SITE = "https://samuelalexsanche.github.io" + BASE;
+export const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://samuelalexsanche.github.io") + BASE;
 
 /** Ruta de un archivo en /public respetando el basePath de GitHub Pages. Deja pasar data: y http(s). */
 export const asset = (p: string) => (p.startsWith("/") ? BASE + p : p);
 
 const mxn = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
 export const money = (n: number) => mxn.format(n);
+/** Precio 0 significa que la desarrolladora aún no lo confirma. */
+export const priceLabel = (n: number) => (n > 0 ? mxn.format(n) : "Precio por confirmar");
 export const moneyShort = (n: number) =>
   n >= 1_000_000 ? `$${(n / 1_000_000).toLocaleString("es-MX", { maximumFractionDigits: 2 })} M` : `$${Math.round(n / 1000)} mil`;
 
@@ -41,7 +43,7 @@ export const baths = (n: number) => (Number.isInteger(n) ? `${n}` : `${Math.floo
 export const bathsLabel = (n: number) => `${baths(n)} ${n === 1 ? "baño" : "baños"}`;
 
 export function specLine(l: Pick<Listing, "bedrooms" | "bathrooms" | "parking" | "m2Built">) {
-  return `${l.bedrooms} rec · ${baths(l.bathrooms)} baños · ${l.m2Built} m²`;
+  return `${l.bedrooms} rec · ${baths(l.bathrooms)} baños${l.m2Built ? ` · ${l.m2Built} m²` : ""}`;
 }
 
 /** Mensualidad estimada de una hipoteca a tasa fija. */

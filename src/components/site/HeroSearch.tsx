@@ -12,10 +12,7 @@ import MapView from "./MapView";
 
 const CHOICES: { id: CreditId | "todos"; label: string }[] = [
   { id: "todos", label: "Cualquiera" },
-  { id: "infonavit", label: "Infonavit" },
-  { id: "fovissste", label: "Fovissste" },
-  { id: "bancario", label: "Banco" },
-  { id: "cofinavit", label: "Cofinavit" },
+  { id: "bancario", label: "Crédito bancario" },
   { id: "contado", label: "Contado" },
 ];
 
@@ -51,15 +48,15 @@ export default function HeroSearch() {
     <section className="mx-auto grid max-w-[1400px] gap-8 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pt-14">
       <div className="grid content-center gap-7">
         <h1 className="font-display text-[clamp(2.5rem,5.4vw,4.6rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-balance">
-          Casas nuevas en Guadalajara que sí aceptan tu crédito.
+          Departamentos nuevos en Guadalajara, de desarrolladoras verificadas.
         </h1>
         <p className="max-w-[46ch] text-lg text-ink-2 text-pretty">
-          Elige con qué vas a comprar y ve solo lo que te alcanza. Cada inmueble lo publica su desarrolladora y lo atiende un asesor con nombre.
+          Elige cómo vas a pagar y tu presupuesto, y ve solo lo que te alcanza. Cada inmueble lo publica su desarrolladora y lo atiende un asesor aprobado.
         </p>
 
         <div className="grid gap-4 rounded-[18px] border border-line bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
           <fieldset>
-            <legend className="mb-2.5 text-sm font-semibold text-ink-2">¿Con qué vas a comprar?</legend>
+            <legend className="mb-2.5 text-sm font-semibold text-ink-2">¿Cómo vas a pagar?</legend>
             <div className="flex flex-wrap gap-2" role="radiogroup">
               {CHOICES.map((c) => (
                 <button

@@ -33,12 +33,12 @@ export default function Agente() {
   }
 
   return (
-    <Guard roles={["superadmin", "org_admin"]}>
+    <Guard roles={["superadmin", "desarrolladora"]}>
       <PageHead
         title="Agente de IA"
         sub={`El asistente que responde en el perfil, los desarrollos y las fichas de ${org.name}. Solo usa lo que cargues aquí y el inventario publicado.`}
         actions={me.role === "superadmin" ? (
-          <Select aria-label="Inmobiliaria" value={orgId} onChange={(e) => setOrgId(e.target.value)} className="w-auto">
+          <Select aria-label="Desarrolladora" value={orgId} onChange={(e) => setOrgId(e.target.value)} className="w-auto">
             {db.orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
           </Select>
         ) : undefined}

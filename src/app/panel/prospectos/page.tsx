@@ -10,7 +10,7 @@ import { creditName, relTime, shortDate } from "@/lib/format";
 import { Avatar, Badge, Button, Dialog, Empty, Field, Select, Textarea, cx } from "@/components/ui";
 import { Guard, LEAD_STATUS, PageHead } from "@/components/panel/Shell";
 
-const SOURCE: Record<Lead["source"], string> = { ficha: "Ficha del inmueble", agente: "Asistente de IA", perfil: "Perfil de la inmobiliaria", desarrollo: "Página del desarrollo" };
+const SOURCE: Record<Lead["source"], string> = { ficha: "Ficha del inmueble", agente: "Asistente de IA", perfil: "Perfil de la desarrolladora", desarrollo: "Página del desarrollo", credito: "Tramita tu crédito" };
 
 export default function Prospectos() {
   const db = useDB();
@@ -21,13 +21,13 @@ export default function Prospectos() {
   if (!me) return null;
   const all = visibleLeads(db, me).filter((l) => !who || l.asesorId === who);
   const lead = all.find((l) => l.id === open) ?? db.leads.find((l) => l.id === open);
-  const asesores = db.users.filter((u) => u.role === "asesor" && (me.role === "superadmin" || u.orgId === me.orgId));
+  const asesores = db.users.filter((u) => u.role === "asesor" && u.asesorTipo === "interno");
 
   return (
-    <Guard roles={["superadmin", "org_admin", "asesor"]}>
+    <Guard roles={["superadmin", "desarrolladora", "asesor"]}>
       <PageHead
         title="Prospectos"
-        sub="Cada contacto llega al asesor responsable del inmueble. Muévelos de etapa conforme avanzan."
+        sub={me.role === "asesor" ? "Los prospectos que la plataforma te asignó. Muévelos de etapa conforme avanzan." : "La plataforma reparte cada contacto por turnos entre los asesores internos. Muévelos de etapa conforme avanzan."}
         actions={can.reassignLead(me) ? (
           <Select aria-label="Filtrar por asesor" value={who} onChange={(e) => setWho(e.target.value)} className="w-auto">
             <option value="">Todos los asesores</option>
@@ -36,7 +36,7 @@ export default function Prospectos() {
         ) : undefined}
       />
       {all.length === 0 ? (
-        <Empty title="Sin prospectos todavía">Llegan desde las fichas, los perfiles y el asistente de IA.</Empty>
+        <Empty title="Sin prospectos todavía">Llegan desde las fichas, los perfiles, la solicitud de crédito y el asistente de IA.</Empty>
       ) : (
         <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8">
           {LEAD_STATUS.map((s) => {
@@ -56,10 +56,11 @@ export default function Prospectos() {
                           <span className="font-semibold">{l.name}</span>
                           <span className="text-xs text-ink-3">{relTime(l.createdAt)}</span>
                         </span>
-                        <span className="line-clamp-1 text-sm text-ink-2">{li?.title ?? devOf(db, l.developmentId)?.name ?? orgOf(db, l.orgId)?.name}</span>
+                        <span className="line-clamp-1 text-sm text-ink-2">{li?.title ?? devOf(db, l.developmentId)?.name ?? orgOf(db, l.orgId)?.name ?? "Contacto general"}</span>
                         <span className="flex flex-wrap gap-1.5">
                           {l.credit && <Badge>{creditName(l.credit)}</Badge>}
                           {l.source === "agente" && <Badge tone="brick"><Sparkle size={11} weight="fill" /> IA</Badge>}
+                          {l.source === "credito" && <Badge tone="warn">Trámite de crédito</Badge>}
                         </span>
                         {me.role !== "asesor" && <span className="text-xs text-ink-3">{userOf(db, l.asesorId)?.name ?? "Sin asesor"}</span>}
                       </button>
@@ -117,15 +118,17 @@ export default function Prospectos() {
               </Field>
               {can.reassignLead(me) && (
                 <Field label="Asesor" htmlFor="ld-as">
-                  <Select id="ld-as" value={lead.asesorId} onChange={(e) => { updateLead(me, lead.id, { asesorId: e.target.value }); toast("Prospecto reasignado"); }}>
-                    {db.users.filter((u) => u.role === "asesor" && u.orgId === lead.orgId).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  <Select id="ld-as" value={lead.asesorId ?? ""} onChange={(e) => { updateLead(me, lead.id, { asesorId: e.target.value || undefined }); toast("Prospecto reasignado"); }}>
+                    <option value="">Sin asignar</option>
+                    {asesores.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </Select>
                 </Field>
               )}
               <dl className="grid gap-2 text-sm">
                 <div><dt className="text-ink-3">Crédito</dt><dd className="font-semibold">{lead.credit ? creditName(lead.credit) : "No lo indicó"}</dd></div>
                 <div><dt className="text-ink-3">Correo</dt><dd>{lead.email || "No lo dejó"}</dd></div>
-                <div><dt className="text-ink-3">Inmobiliaria</dt><dd>{orgOf(db, lead.orgId)?.name}</dd></div>
+                {lead.bankId && <div><dt className="text-ink-3">Banco de interés</dt><dd>{db.banks.find((b) => b.id === lead.bankId)?.bank}</dd></div>}
+                <div><dt className="text-ink-3">Desarrolladora</dt><dd>{orgOf(db, lead.orgId)?.name ?? "Sin desarrolladora"}</dd></div>
               </dl>
             </div>
           </div>

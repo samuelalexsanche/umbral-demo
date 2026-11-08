@@ -4,29 +4,30 @@ import HeroSearch from "@/components/site/HeroSearch";
 import { Developments, Featured, OrgsRow } from "@/components/site/HomeSections";
 import JsonLd from "@/components/JsonLd";
 import { CREDITS, SEED } from "@/lib/seed";
+import { LatestNews } from "@/components/site/HomeSections";
 import { SITE, asset } from "@/lib/format";
 
 const FAQ = [
   {
-    q: "¿Puedo buscar casas que acepten Infonavit o Fovissste?",
-    a: "Sí. En Umbral cada inmueble indica los créditos que acepta su desarrolladora y puedes filtrar por Infonavit, Fovissste, Cofinavit, Unamos Créditos, crédito bancario o contado. El filtro solo muestra lo que la desarrolladora confirmó.",
+    q: "¿Puedo comprar con crédito bancario?",
+    a: "Sí. En la sección de créditos comparas las tasas de los principales bancos, calculas tu mensualidad y puedes tramitar el crédito con un asesor de Umbral sin costo.",
   },
   {
     q: "¿Quién publica los inmuebles?",
-    a: "Los publican directamente las desarrolladoras e inmobiliarias desde su panel, con su perfil propio y el asesor responsable de cada inmueble. Las que muestran el sello de verificación ya pasaron la revisión de documentos de la plataforma.",
+    a: "Solo desarrolladoras aprobadas por Umbral, desde su propio panel. Cada perfil muestra su historia, su inventario actual, sus avances de obra y una calificación de confianza; el sello verde lo tienen las que cumplen los criterios de la plataforma.",
   },
   {
     q: "¿Cuánto cuesta usar Umbral para comprar?",
-    a: "Buscar, guardar, comparar y contactar asesores es gratis para quien compra. Las desarrolladoras pagan por publicar su inventario.",
+    a: "Buscar, guardar, comparar, contactar a un asesor y tramitar tu crédito es gratis para quien compra.",
   },
   {
     q: "¿Qué hago para apartar una casa?",
-    a: "Habla con el asesor desde la ficha del inmueble. El apartado se firma siempre en la oficina de ventas de la desarrolladora; nunca se paga por chat ni a cuentas personales.",
+    a: "Deja tus datos en la ficha del inmueble y un asesor de Umbral te contacta. El apartado se firma siempre con la desarrolladora; nunca se paga por chat ni a cuentas personales.",
   },
 ];
 
 export default function Home() {
-  const pub = SEED.listings.filter((l) => l.status === "publicado");
+  const pub = SEED.listings.filter((l) => l.status === "publicado" && l.price > 0);
   return (
     <>
       <JsonLd
@@ -65,8 +66,8 @@ export default function Home() {
           </div>
           <ul className="grid gap-px overflow-hidden rounded-[16px] bg-paper/10 sm:grid-cols-2">
             {[
-              { i: SealCheck, t: "Desarrolladoras verificadas", d: "Revisamos acta constitutiva, permisos y oficina de ventas antes de otorgar el sello." },
-              { i: UserFocus, t: "Un asesor con nombre", d: "Cada inmueble tiene un asesor responsable y su tiempo de respuesta es público." },
+              { i: SealCheck, t: "Desarrolladoras verificadas", d: "Solo publican desarrolladoras aprobadas. La calificación de confianza y el sello verde son públicos." },
+              { i: UserFocus, t: "Asesores aprobados", d: "Te atiende un asesor de Umbral. Nadie se da de alta solo: cada asesor pasa por aprobación." },
               { i: ArrowsClockwise, t: "Inventario que se mueve", d: "Las unidades disponibles se actualizan desde el panel de la desarrolladora; lo vendido se marca como agotado." },
               { i: Sparkle, t: "Un asistente por desarrolladora", d: "Resuelve dudas de créditos, visitas y entregas con la información que la propia empresa cargó." },
             ].map(({ i: Icon, t, d }) => (
@@ -82,11 +83,11 @@ export default function Home() {
 
       <section className="mx-auto mt-24 grid max-w-[1400px] gap-10 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="grid content-start gap-4">
-          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">¿Con qué crédito puedo comprar una casa nueva?</h2>
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">¿Cuánto pagarías al mes?</h2>
           <p className="text-ink-2 text-pretty">
-            En la zona metropolitana de Guadalajara la mayoría de las casas nuevas se compran con Infonavit, Fovissste, crédito bancario o una combinación como Cofinavit. Antes de enamorarte de una casa, revisa cuánto te presta tu instituto o tu banco y filtra por ese crédito.
+            Compara las tasas de los bancos, calcula tu mensualidad con el simulador y, si quieres, tramita tu crédito con nosotros. Antes de enamorarte de un departamento, revisa cuánto te presta el banco.
           </p>
-          <Link href="/creditos/" className="inline-flex items-center gap-1.5 font-semibold text-brick hover:underline">Leer la guía de créditos <ArrowRight size={16} /></Link>
+          <Link href="/creditos/" className="inline-flex items-center gap-1.5 font-semibold text-brick hover:underline">Ver tasas y simulador <ArrowRight size={16} /></Link>
         </div>
         <ul className="grid gap-3 sm:grid-cols-2">
           {CREDITS.map((c) => {
@@ -104,6 +105,14 @@ export default function Home() {
             );
           })}
         </ul>
+      </section>
+
+      <section className="mx-auto mt-24 max-w-[1400px] px-4 sm:px-6">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Noticias y avances</h2>
+          <Link href="/noticias/" className="inline-flex items-center gap-1.5 font-semibold text-ink-2 hover:text-ink">Ver noticias <ArrowRight size={16} /></Link>
+        </div>
+        <LatestNews />
       </section>
 
       <section className="mx-auto mt-24 max-w-[1400px] px-4 sm:px-6">
@@ -129,12 +138,15 @@ export default function Home() {
       <section className="mx-auto mt-24 max-w-[1400px] px-4 sm:px-6">
         <div className="grid items-center gap-8 overflow-hidden rounded-[22px] bg-ink p-8 text-paper sm:p-12 lg:grid-cols-[1.2fr_1fr]">
           <div className="grid gap-4">
-            <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">¿Tienes un desarrollo? Publícalo con su propio perfil.</h2>
-            <p className="max-w-[48ch] text-paper/75">Inventario por modelo, asesores con roles, prospectos directos a tu equipo y un asistente de IA entrenado con tu información.</p>
-            <div><Link href="/publica-tus-desarrollos/" className="press inline-flex h-12 items-center gap-2 rounded-full bg-brick px-6 font-semibold text-white hover:bg-brick-d">Conocer la plataforma <ArrowRight size={18} /></Link></div>
+            <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">¿Eres desarrollador o asesor?</h2>
+            <p className="max-w-[48ch] text-paper/75">Las desarrolladoras solicitan colocar su inventario, sujeto a condiciones. Los asesores solicitan acceso al portal: inventario en tiempo real, cotizaciones con sus datos, material de venta y academia.</p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/publica-tus-desarrollos/" className="press inline-flex h-12 items-center gap-2 rounded-full bg-brick px-6 font-semibold text-white hover:bg-brick-d">Para desarrolladores <ArrowRight size={18} /></Link>
+              <Link href="/asesores/" className="press inline-flex h-12 items-center gap-2 rounded-full border border-paper/30 px-6 font-semibold text-paper hover:border-paper">Soy asesor</Link>
+            </div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/img/desarrolladores-maqueta.jpg")} alt="Maqueta de un fraccionamiento en una oficina de ventas" loading="lazy" className="aspect-[16/10] w-full rounded-[14px] object-cover" />
+          <img src={asset("/img/casillas/pub/brokers-4.webp")} alt="Asesores revisando un desarrollo de Grupo Casillas" loading="lazy" className="aspect-square w-full rounded-[14px] object-cover" />
         </div>
       </section>
     </>

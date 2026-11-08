@@ -4,7 +4,7 @@
 // solo tenga que cambiar la implementación (API + base de datos) y no las pantallas.
 import { useSyncExternalStore } from "react";
 import { SEED, seedDB } from "./seed";
-import type { Activity, DB, Lead, Listing, Org, Development, User, Role, PlatformRequest } from "./types";
+import type { Activity, AdvisorApplication, Article, AsesorTipo, BankRate, Course, DB, Development, Lead, Listing, Material, Org, PlatformRequest, Role, User } from "./types";
 
 const KEY = "umbral-db";
 const SESSION = "umbral-session";
@@ -140,41 +140,38 @@ export function logout() {
 /* ─── Permisos ───────────────────────────────────────────────── */
 export const ROLE_LABEL: Record<Role, string> = {
   superadmin: "Administrador general",
-  org_admin: "Administrador de inmobiliaria",
+  desarrolladora: "Desarrolladora",
   asesor: "Asesor",
-  colaborador: "Colaborador",
 };
 
+export const roleLabel = (u: Pick<User, "role" | "asesorTipo">) =>
+  u.role === "asesor" ? (u.asesorTipo === "interno" ? "Asesor interno" : "Asesor externo") : ROLE_LABEL[u.role];
+
+const ownsOrg = (u: User, orgId?: string) => u.role === "superadmin" || (u.role === "desarrolladora" && !!orgId && u.orgId === orgId);
+
+// Ningún asesor da de alta ni modifica inventario, desarrollos ni información.
 export const can = {
   manageOrgs: (u: User) => u.role === "superadmin",
   manageCatalogs: (u: User) => u.role === "superadmin",
-  editOrgProfile: (u: User, orgId: string) => u.role === "superadmin" || (u.role === "org_admin" && u.orgId === orgId),
-  manageDevelopments: (u: User, orgId: string) => u.role === "superadmin" || (u.role === "org_admin" && u.orgId === orgId),
-  createUser: (u: User, role: Role) =>
-    u.role === "superadmin" ||
-    (u.role === "org_admin" && (role === "asesor" || role === "colaborador")) ||
-    (u.role === "asesor" && role === "colaborador"),
-  publishDirectly: (u: User) => u.role !== "colaborador",
-  review: (u: User, l: Listing) =>
-    u.role === "superadmin" ||
-    (u.role === "org_admin" && u.orgId === l.orgId) ||
-    (u.role === "asesor" && l.asesorId === u.id),
-  editListing: (u: User, l: Listing) =>
-    u.role === "superadmin" ||
-    (u.role === "org_admin" && u.orgId === l.orgId) ||
-    (u.role === "asesor" && l.orgId === u.orgId && (l.asesorId === u.id || l.createdBy === u.id)) ||
-    (u.role === "colaborador" && l.createdBy === u.id && (l.status === "borrador" || l.status === "revision")),
+  manageAdvisors: (u: User) => u.role === "superadmin",
+  manageContent: (u: User) => u.role === "superadmin",
+  editOrgProfile: (u: User, orgId: string) => ownsOrg(u, orgId),
+  manageDevelopments: (u: User, orgId: string) => ownsOrg(u, orgId),
+  editListing: (u: User, l: Pick<Listing, "orgId">) => ownsOrg(u, l.orgId),
+  manageMaterials: (u: User, orgId: string) => ownsOrg(u, orgId),
+  postForOrg: (u: User, orgId?: string) => u.role === "superadmin" || (u.role === "desarrolladora" && !!orgId && u.orgId === orgId),
   seeLead: (u: User, l: Lead) =>
-    u.role === "superadmin" || (u.role === "org_admin" && u.orgId === l.orgId) || (u.role === "asesor" && l.asesorId === u.id),
-  reassignLead: (u: User) => u.role === "superadmin" || u.role === "org_admin",
-  manageAgent: (u: User, orgId: string) => u.role === "superadmin" || (u.role === "org_admin" && u.orgId === orgId),
+    u.role === "superadmin" || (u.role === "desarrolladora" && !!l.orgId && u.orgId === l.orgId) || (u.role === "asesor" && u.asesorTipo === "interno" && l.asesorId === u.id),
+  reassignLead: (u: User) => u.role === "superadmin",
+  manageAgent: (u: User, orgId: string) => ownsOrg(u, orgId),
+  usePortal: (u: User) => u.role === "asesor" || u.role === "superadmin",
+  receiveLeads: (u: User) => u.role === "superadmin" || u.role === "desarrolladora" || (u.role === "asesor" && u.asesorTipo === "interno"),
 };
 
 export function visibleListings(db: DB, u: User) {
   if (u.role === "superadmin") return db.listings;
-  if (u.role === "org_admin") return db.listings.filter((l) => l.orgId === u.orgId);
-  if (u.role === "asesor") return db.listings.filter((l) => l.orgId === u.orgId && (l.asesorId === u.id || l.createdBy === u.id || db.users.find((x) => x.id === l.createdBy)?.managerId === u.id));
-  return db.listings.filter((l) => l.createdBy === u.id);
+  if (u.role === "desarrolladora") return db.listings.filter((l) => l.orgId === u.orgId);
+  return db.listings.filter((l) => l.status === "publicado" || l.status === "vendido");
 }
 
 export function visibleLeads(db: DB, u: User) {
@@ -183,8 +180,7 @@ export function visibleLeads(db: DB, u: User) {
 
 export function visibleUsers(db: DB, u: User) {
   if (u.role === "superadmin") return db.users;
-  if (u.role === "org_admin") return db.users.filter((x) => x.orgId === u.orgId);
-  if (u.role === "asesor") return db.users.filter((x) => x.managerId === u.id || x.id === u.id);
+  if (u.role === "desarrolladora") return db.users.filter((x) => x.orgId === u.orgId);
   return db.users.filter((x) => x.id === u.id);
 }
 
@@ -201,10 +197,13 @@ export function tempPassword() {
   return `${w[Math.floor(Math.random() * w.length)]}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
-export function createUser(actor: User, data: { name: string; email: string; phone: string; title: string; role: Role; orgId?: string }): { ok: true; user: User; password: string } | { ok: false; error: string } {
+export type NewUser = { name: string; email: string; phone: string; title: string; role: Role; orgId?: string; asesorTipo?: AsesorTipo; company?: string };
+
+export function createUser(actor: User, data: NewUser): { ok: true; user: User; password: string } | { ok: false; error: string } {
   const db = load();
-  if (!can.createUser(actor, data.role)) return { ok: false, error: "Tu rol no puede dar de alta este tipo de usuario." };
+  if (actor.role !== "superadmin") return { ok: false, error: "Solo el administrador general da de alta usuarios." };
   if (db.users.some((x) => x.email.toLowerCase() === data.email.trim().toLowerCase())) return { ok: false, error: "Ya existe un usuario con ese correo." };
+  if (data.role === "desarrolladora" && !data.orgId) return { ok: false, error: "Elige la desarrolladora a la que pertenece." };
   const password = tempPassword();
   const user: User = {
     id: uid("u"),
@@ -212,10 +211,12 @@ export function createUser(actor: User, data: { name: string; email: string; pho
     email: data.email.trim().toLowerCase(),
     password,
     role: data.role,
-    orgId: actor.role === "superadmin" ? data.orgId : actor.orgId,
-    managerId: data.role === "colaborador" ? (actor.role === "asesor" ? actor.id : undefined) : undefined,
+    orgId: data.role === "desarrolladora" ? data.orgId : undefined,
+    asesorTipo: data.role === "asesor" ? (data.asesorTipo ?? "externo") : undefined,
+    company: data.company?.trim() || undefined,
     phone: data.phone.trim(),
-    title: data.title.trim() || ROLE_LABEL[data.role],
+    mobile: data.phone.trim(),
+    title: data.title.trim() || roleLabel(data),
     active: true,
     createdBy: actor.id,
     createdAt: now(),
@@ -223,12 +224,20 @@ export function createUser(actor: User, data: { name: string; email: string; pho
   };
   mutate((d) => {
     d.users.push(user);
-    log(d, actor, `dio de alta a ${user.name} como ${ROLE_LABEL[user.role].toLowerCase()}`, user.orgId);
+    log(d, actor, `dio de alta a ${user.name} como ${roleLabel(user).toLowerCase()}`, user.orgId);
   });
   return { ok: true, user, password };
 }
 
 export function updateUser(actor: User, id: string, patch: Partial<User>) {
+  if (actor.role !== "superadmin" && actor.id !== id) return;
+  // Nadie cambia su propio rol ni su tipo de asesor desde su perfil.
+  if (actor.role !== "superadmin") {
+    delete patch.role;
+    delete patch.asesorTipo;
+    delete patch.orgId;
+    delete patch.active;
+  }
   mutate((d) => {
     const u = d.users.find((x) => x.id === id);
     if (!u) return;
@@ -249,6 +258,7 @@ export function changePassword(userId: string, password: string) {
 
 /* ─── Inmuebles ──────────────────────────────────────────────── */
 export function saveListing(actor: User, data: Omit<Listing, "id" | "slug" | "views" | "createdAt" | "updatedAt" | "createdBy"> & { id?: string }) {
+  if (!can.editListing(actor, data)) return null;
   let saved: Listing | null = null;
   mutate((d) => {
     if (data.id) {
@@ -270,27 +280,27 @@ export function saveListing(actor: User, data: Omit<Listing, "id" | "slug" | "vi
       };
       d.listings.unshift(l);
       saved = l;
-      log(d, actor, l.status === "revision" ? `envió a revisión ${l.title}` : `creó ${l.title}`, l.orgId);
+      log(d, actor, `creó ${l.title}`, l.orgId);
     }
   });
   return saved as Listing | null;
 }
 
-export function setListingStatus(actor: User, id: string, status: Listing["status"], note?: string) {
+export function setListingStatus(actor: User, id: string, status: Listing["status"]) {
   mutate((d) => {
     const l = d.listings.find((x) => x.id === id);
-    if (!l) return;
+    if (!l || !can.editListing(actor, l)) return;
     l.status = status;
-    l.reviewNote = note;
     l.updatedAt = now();
-    const verb: Record<string, string> = { publicado: "publicó", borrador: "regresó a borrador", pausado: "pausó", vendido: "marcó como vendido", revision: "envió a revisión" };
-    log(d, actor, `${verb[status]} ${l.title}${note ? ` con la nota: ${note}` : ""}`, l.orgId);
+    const verb: Record<string, string> = { publicado: "publicó", borrador: "regresó a borrador", pausado: "pausó", vendido: "marcó como vendido" };
+    log(d, actor, `${verb[status]} ${l.title}`, l.orgId);
   });
 }
 
 export function deleteListing(actor: User, id: string) {
   mutate((d) => {
     const l = d.listings.find((x) => x.id === id);
+    if (!l || !can.editListing(actor, l)) return;
     d.listings = d.listings.filter((x) => x.id !== id);
     if (l) log(d, actor, `eliminó ${l.title}`, l.orgId);
   });
@@ -308,6 +318,7 @@ export function addView(id: string) {
 
 /* ─── Desarrollos y organizaciones ───────────────────────────── */
 export function saveDevelopment(actor: User, data: Omit<Development, "id" | "slug" | "createdAt"> & { id?: string }) {
+  if (!can.manageDevelopments(actor, data.orgId)) return;
   mutate((d) => {
     if (data.id) {
       const dev = d.developments.find((x) => x.id === data.id);
@@ -321,6 +332,14 @@ export function saveDevelopment(actor: User, data: Omit<Development, "id" | "slu
 }
 
 export function saveOrg(actor: User, data: Partial<Org> & { id?: string; name: string }) {
+  if (data.id ? !can.editOrgProfile(actor, data.id) : !can.manageOrgs(actor)) return null;
+  // Solo el administrador otorga el sello y la verificación.
+  if (actor.role !== "superadmin") {
+    delete data.seal;
+    delete data.verified;
+    delete data.trust;
+    delete data.status;
+  }
   let created: Org | null = null;
   mutate((d) => {
     if (data.id) {
@@ -332,13 +351,16 @@ export function saveOrg(actor: User, data: Partial<Org> & { id?: string; name: s
         id: uid("org"),
         slug: uniqueSlug(data.name, d.orgs.map((x) => x.slug)),
         name: data.name,
-        kind: data.kind ?? "inmobiliaria",
         verified: false,
         status: "activa",
         initials: data.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
         color: data.color ?? "#2E3A45",
         tagline: data.tagline ?? "",
         description: data.description ?? "",
+        history: data.history ?? "",
+        paymentTerms: data.paymentTerms ?? "",
+        seal: false,
+        trust: [],
         since: data.since ?? new Date().getFullYear(),
         municipios: data.municipios ?? [],
         phone: data.phone ?? "",
@@ -352,19 +374,29 @@ export function saveOrg(actor: User, data: Partial<Org> & { id?: string; name: s
       };
       d.orgs.push(o);
       created = o;
-      log(d, actor, `dio de alta la inmobiliaria ${o.name}`, o.id);
+      log(d, actor, `dio de alta la desarrolladora ${o.name}`, o.id);
     }
   });
   return created as Org | null;
 }
 
 /* ─── Prospectos ─────────────────────────────────────────────── */
-export function createLead(data: Omit<Lead, "id" | "status" | "notes" | "createdAt">) {
-  const lead: Lead = { ...data, id: uid("ld"), status: "nuevo", notes: [], createdAt: now() };
+/** La plataforma reparte los prospectos por turnos entre los asesores internos activos. */
+function nextInterno(d: DB): string | undefined {
+  const pool = d.users.filter((x) => x.role === "asesor" && x.asesorTipo === "interno" && x.active).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  if (!pool.length) return undefined;
+  const pick = pool[d.rr % pool.length];
+  d.rr = (d.rr + 1) % 1_000_000;
+  return pick.id;
+}
+
+export function createLead(data: Omit<Lead, "id" | "status" | "notes" | "createdAt" | "asesorId">) {
+  let lead: Lead | null = null;
   mutate((d) => {
+    lead = { ...data, id: uid("ld"), asesorId: nextInterno(d), status: "nuevo", notes: [], createdAt: now() };
     d.leads.unshift(lead);
   });
-  return lead;
+  return lead as unknown as Lead;
 }
 
 export function updateLead(actor: User, id: string, patch: Partial<Lead>, note?: string) {
@@ -385,8 +417,132 @@ export function addPlatformRequest(r: Omit<PlatformRequest, "id" | "createdAt">)
 }
 
 export function addAmenity(actor: User, name: string) {
+  if (!can.manageCatalogs(actor)) return;
   mutate((d) => {
     if (!d.amenities.includes(name)) d.amenities.push(name);
     log(d, actor, `agregó la amenidad ${name} al catálogo`);
+  });
+}
+
+/* ─── Asesores: solicitudes ──────────────────────────────────── */
+export function submitApplication(a: Omit<AdvisorApplication, "id" | "status" | "createdAt">): { ok: true } | { ok: false; error: string } {
+  const db = load();
+  const email = a.email.trim().toLowerCase();
+  if (db.users.some((x) => x.email === email)) return { ok: false, error: "Ese correo ya tiene acceso. Entra desde Acceso." };
+  if (db.applications.some((x) => x.email === email && x.status === "pendiente")) return { ok: false, error: "Ya hay una solicitud pendiente con ese correo." };
+  mutate((d) => {
+    d.applications.unshift({ ...a, email, id: uid("ap"), status: "pendiente", createdAt: now() });
+  });
+  return { ok: true };
+}
+
+export function approveApplication(actor: User, id: string, tipo: AsesorTipo) {
+  const ap = load().applications.find((x) => x.id === id);
+  if (!ap || actor.role !== "superadmin") return { ok: false as const, error: "No se encontró la solicitud." };
+  const r = createUser(actor, { name: ap.name, email: ap.email, phone: ap.phone, title: "Asesor inmobiliario", role: "asesor", asesorTipo: tipo, company: ap.company });
+  if (!r.ok) return r;
+  mutate((d) => {
+    const x = d.applications.find((y) => y.id === id);
+    if (x) Object.assign(x, { status: "aprobada", reviewedBy: actor.id, userId: r.user.id });
+    log(d, actor, `aprobó la solicitud de ${ap.name} como asesor ${tipo}`);
+  });
+  return r;
+}
+
+export function rejectApplication(actor: User, id: string, note: string) {
+  if (actor.role !== "superadmin") return;
+  mutate((d) => {
+    const x = d.applications.find((y) => y.id === id);
+    if (!x) return;
+    Object.assign(x, { status: "rechazada", reviewedBy: actor.id, reviewNote: note });
+    log(d, actor, `rechazó la solicitud de ${x.name}`);
+  });
+}
+
+/* ─── Tasas bancarias ────────────────────────────────────────── */
+export function saveBank(actor: User, b: Omit<BankRate, "id" | "updatedAt"> & { id?: string }) {
+  if (actor.role !== "superadmin") return;
+  mutate((d) => {
+    if (b.id) {
+      const x = d.banks.find((y) => y.id === b.id);
+      if (x) Object.assign(x, b, { updatedAt: now() });
+    } else d.banks.push({ ...b, id: uid("bk"), updatedAt: now() });
+    log(d, actor, `actualizó la tasa de ${b.bank}`);
+  });
+}
+
+export function deleteBank(actor: User, id: string) {
+  if (actor.role !== "superadmin") return;
+  mutate((d) => {
+    d.banks = d.banks.filter((x) => x.id !== id);
+  });
+}
+
+/* ─── Noticias y publicaciones ───────────────────────────────── */
+export function saveArticle(actor: User, a: Omit<Article, "id" | "slug" | "createdBy"> & { id?: string }) {
+  if (!can.postForOrg(actor, a.orgId) && !(actor.role === "superadmin")) return null;
+  let saved: Article | null = null;
+  mutate((d) => {
+    if (a.id) {
+      const x = d.articles.find((y) => y.id === a.id);
+      if (!x) return;
+      Object.assign(x, a);
+      saved = x;
+      log(d, actor, `editó la publicación ${a.title}`, a.orgId);
+    } else {
+      const x: Article = { ...a, id: uid("ar"), slug: uniqueSlug(a.title, d.articles.map((y) => y.slug)), createdBy: actor.id };
+      d.articles.unshift(x);
+      saved = x;
+      log(d, actor, `publicó ${a.title}`, a.orgId);
+    }
+  });
+  return saved as Article | null;
+}
+
+export function deleteArticle(actor: User, id: string) {
+  mutate((d) => {
+    const x = d.articles.find((y) => y.id === id);
+    if (!x || !(actor.role === "superadmin" || can.postForOrg(actor, x.orgId))) return;
+    d.articles = d.articles.filter((y) => y.id !== id);
+  });
+}
+
+/* ─── Material descargable ───────────────────────────────────── */
+export function saveMaterial(actor: User, m: Omit<Material, "id" | "createdAt"> & { id?: string }) {
+  if (!can.manageMaterials(actor, m.orgId)) return;
+  mutate((d) => {
+    if (m.id) {
+      const x = d.materials.find((y) => y.id === m.id);
+      if (x) Object.assign(x, m);
+    } else d.materials.unshift({ ...m, id: uid("m"), createdAt: now() });
+    log(d, actor, `subió material: ${m.title}`, m.orgId);
+  });
+}
+
+export function deleteMaterial(actor: User, id: string) {
+  mutate((d) => {
+    const x = d.materials.find((y) => y.id === id);
+    if (!x || !can.manageMaterials(actor, x.orgId)) return;
+    d.materials = d.materials.filter((y) => y.id !== id);
+  });
+}
+
+/* ─── Academia ───────────────────────────────────────────────── */
+export function saveCourse(actor: User, c: Omit<Course, "id" | "createdAt"> & { id?: string }) {
+  if (!(actor.role === "superadmin" || (c.orgId && can.postForOrg(actor, c.orgId)))) return;
+  mutate((d) => {
+    if (c.id) {
+      const x = d.courses.find((y) => y.id === c.id);
+      if (x) Object.assign(x, c);
+    } else d.courses.unshift({ ...c, id: uid("c"), createdAt: now() });
+    log(d, actor, `guardó en academia: ${c.title}`, c.orgId);
+  });
+}
+
+export function deleteCourse(actor: User, id: string) {
+  mutate((d) => {
+    const x = d.courses.find((y) => y.id === id);
+    if (!x || !(actor.role === "superadmin" || (x.orgId && can.postForOrg(actor, x.orgId)))) return;
+    d.courses = d.courses.filter((y) => y.id !== id);
   });
 }

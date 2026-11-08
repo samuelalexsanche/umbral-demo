@@ -39,7 +39,7 @@ export default async function Page({ params }: P) {
           address: { "@type": "PostalAddress", streetAddress: d.colonia, addressLocality: d.municipio, addressRegion: "Jalisco", addressCountry: "MX" },
           geo: { "@type": "GeoCoordinates", latitude: d.lat, longitude: d.lng },
           containedInPlace: { "@type": "City", name: d.municipio },
-          provider: { "@type": "RealEstateAgent", name: o.name, url: `${SITE}/inmobiliaria/${o.slug}/` },
+          provider: { "@type": "RealEstateAgent", name: o.name, url: `${SITE}/desarrolladora/${o.slug}/` },
         }}
       />
       <DevelopmentProfile id={d.id} />

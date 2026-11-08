@@ -13,7 +13,7 @@ export default function Catalogos() {
   if (!me) return null;
   return (
     <Guard roles={["superadmin"]}>
-      <PageHead title="Catálogos" sub="Listas que comparten todas las inmobiliarias para que los filtros del buscador funcionen igual para todos." />
+      <PageHead title="Catálogos" sub="Listas que comparten todas las desarrolladoras para que los filtros del buscador funcionen igual para todos." />
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="grid content-start gap-4 rounded-[14px] border border-line bg-card p-5">
           <h2 className="font-display text-lg font-semibold">Amenidades</h2>

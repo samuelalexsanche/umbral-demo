@@ -23,16 +23,16 @@ const CENTER: Record<string, [number, number]> = {
 type Form = {
   title: string; type: PropertyType; developmentId: string; description: string; price: string; delivery: Delivery; deliveryDate: string;
   unitsAvailable: string; unitsTotal: string; bedrooms: string; bathrooms: string; parking: string; m2Built: string; m2Land: string; levels: string;
-  features: string; credits: CreditId[]; colonia: string; municipio: string; images: string[]; asesorId: string; orgId: string; featured: boolean;
+  features: string; credits: CreditId[]; paymentTerms: string; colonia: string; municipio: string; images: string[]; orgId: string; featured: boolean;
 };
 
 const blank: Form = {
   title: "", type: "casa", developmentId: "", description: "", price: "", delivery: "entrega-inmediata", deliveryDate: "", unitsAvailable: "", unitsTotal: "",
-  bedrooms: "3", bathrooms: "2", parking: "1", m2Built: "", m2Land: "", levels: "2", features: "", credits: ["bancario", "contado"], colonia: "", municipio: "Zapopan",
-  images: [], asesorId: "", orgId: "", featured: false,
+  bedrooms: "3", bathrooms: "2", parking: "1", m2Built: "", m2Land: "", levels: "2", features: "", credits: ["bancario", "contado"], paymentTerms: "", colonia: "", municipio: "Guadalajara",
+  images: [], orgId: "", featured: false,
 };
 
-/** Redimensiona una foto en el navegador para no llenar el almacenamiento de la demo. */
+/** Redimensiona una foto en el navegador para no subir archivos enormes. */
 function shrink(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -71,31 +71,30 @@ export default function Editor() {
         deliveryDate: l.deliveryDate ?? "", unitsAvailable: l.unitsAvailable?.toString() ?? "", unitsTotal: l.unitsTotal?.toString() ?? "",
         bedrooms: String(l.bedrooms), bathrooms: String(l.bathrooms), parking: String(l.parking), m2Built: String(l.m2Built), m2Land: l.m2Land?.toString() ?? "",
         levels: String(l.levels), features: l.features.join(", "), credits: l.credits, colonia: l.colonia, municipio: l.municipio, images: l.images,
-        asesorId: l.asesorId, orgId: l.orgId, featured: l.featured,
+        paymentTerms: l.paymentTerms ?? "", orgId: l.orgId, featured: l.featured,
       });
     } else {
-      const orgId = me.orgId ?? db.orgs[0].id;
-      const asesorId = me.role === "asesor" ? me.id : me.role === "colaborador" ? me.managerId ?? "" : db.users.find((u) => u.orgId === orgId && u.role === "asesor")?.id ?? "";
-      setF({ ...blank, orgId, asesorId, credits: db.orgs.find((o) => o.id === orgId)?.credits ?? blank.credits });
+      const orgId = me.orgId ?? db.orgs[0]?.id ?? "";
+      const o = db.orgs.find((x) => x.id === orgId);
+      setF({ ...blank, orgId, credits: o?.credits ?? blank.credits, paymentTerms: o?.paymentTerms ?? "" });
     }
     setLoaded(true);
   }, [me, db, loaded]);
 
   const org = db.orgs.find((o) => o.id === f.orgId);
   const devs = db.developments.filter((d) => d.orgId === f.orgId);
-  const asesores = db.users.filter((u) => u.orgId === f.orgId && u.role === "asesor" && u.active);
   const library = useMemo(() => Array.from(new Set(db.developments.filter((d) => d.orgId === f.orgId).flatMap((d) => d.images))), [db, f.orgId]);
   const existing = id ? db.listings.find((x) => x.id === id) : undefined;
 
   if (!me || !loaded) return null;
-  if (existing && !can.editListing(me, existing)) return <p className="text-ink-2">No puedes editar este inmueble.</p>;
+  if (!can.editListing(me, existing ?? { orgId: f.orgId })) return <p className="text-ink-2">Tu rol no puede dar de alta ni modificar inventario.</p>;
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
   const inp = (k: keyof Form) => ({ value: f[k] as string, onChange: (e: { target: { value: string } }) => set(k, e.target.value as never), "aria-invalid": !!err[k] });
 
   function pickDev(devId: string) {
     const d = db.developments.find((x) => x.id === devId);
-    setF((x) => ({ ...x, developmentId: devId, ...(d ? { colonia: d.colonia, municipio: d.municipio, delivery: d.delivery, deliveryDate: d.deliveryDate ?? "", images: x.images.length ? x.images : d.images.slice(0, 3) } : {}) }));
+    setF((x) => ({ ...x, developmentId: devId, ...(d ? { colonia: d.colonia, municipio: d.municipio, delivery: d.delivery, deliveryDate: d.deliveryDate ?? "", paymentTerms: x.paymentTerms || d.paymentTerms || "", images: x.images.length ? x.images : d.images.slice(0, 3) } : {}) }));
   }
 
   async function upload(files: FileList | null) {
@@ -110,14 +109,13 @@ export default function Editor() {
 
   function validate() {
     const e: Record<string, string> = {};
-    if (f.title.trim().length < 8) e.title = "Usa un título descriptivo de al menos 8 caracteres, por ejemplo 'Casa Encino en Bosque Arcada'.";
+    if (f.title.trim().length < 8) e.title = "Usa un título descriptivo de al menos 8 caracteres, por ejemplo 'Departamento de 2 recámaras en Cedros 1180'.";
     if (!(Number(f.price) > 100000)) e.price = "Escribe el precio en pesos, sin puntos ni comas.";
     if (!(Number(f.m2Built) > 10)) e.m2Built = "Escribe los metros construidos.";
     if (f.description.trim().length < 40) e.description = "Describe el inmueble en al menos 40 caracteres: distribución, acabados y lo que lo hace distinto.";
     if (!f.colonia.trim()) e.colonia = "Escribe la colonia.";
     if (!f.credits.length) e.credits = "Elige al menos una forma de pago.";
     if (!f.images.length) e.images = "Agrega al menos una foto.";
-    if (!f.asesorId) e.asesorId = "Asigna un asesor responsable.";
     if (f.delivery === "preventa" && !f.deliveryDate) e.deliveryDate = "Indica el mes estimado de entrega.";
     if (f.unitsAvailable && f.unitsTotal && Number(f.unitsAvailable) > Number(f.unitsTotal)) e.unitsAvailable = "No puede haber más disponibles que el total.";
     setErr(e);
@@ -136,29 +134,27 @@ export default function Editor() {
     const jitter = () => (Math.random() - 0.5) * 0.004;
     const saved = saveListing(me!, {
       id: id ?? undefined,
-      title: f.title.trim(), orgId: f.orgId, developmentId: f.developmentId || undefined, asesorId: f.asesorId, status,
-      reviewNote: undefined, type: f.type, price: Number(f.price) || 0, bedrooms: Number(f.bedrooms), bathrooms: Number(f.bathrooms), parking: Number(f.parking),
+      title: f.title.trim(), orgId: f.orgId, developmentId: f.developmentId || undefined, status,
+      type: f.type, price: Number(f.price) || 0, bedrooms: Number(f.bedrooms), bathrooms: Number(f.bathrooms), parking: Number(f.parking),
       m2Built: Number(f.m2Built) || 0, m2Land: f.m2Land ? Number(f.m2Land) : undefined, levels: Number(f.levels) || 1, delivery: f.delivery,
       deliveryDate: f.delivery === "preventa" ? f.deliveryDate : undefined, unitsAvailable: f.unitsAvailable ? Number(f.unitsAvailable) : undefined,
-      unitsTotal: f.unitsTotal ? Number(f.unitsTotal) : undefined, credits: f.credits, amenities: d?.amenities ?? [],
+      unitsTotal: f.unitsTotal ? Number(f.unitsTotal) : undefined, credits: f.credits, paymentTerms: f.paymentTerms.trim() || undefined, amenities: d?.amenities ?? [],
       features: f.features.split(",").map((s) => s.trim()).filter(Boolean), description: f.description.trim(), colonia: f.colonia.trim(), municipio: f.municipio,
       lat: existing?.lat ?? c[0] + jitter(), lng: existing?.lng ?? c[1] + jitter(), images: f.images, featured: f.featured,
     });
     if (!saved) return toast.error("No se pudo guardar. Puede que el navegador no tenga espacio para más fotos.");
-    toast.success(status === "publicado" ? "Inmueble publicado" : status === "revision" ? "Enviado a revisión" : "Borrador guardado");
+    toast.success(status === "publicado" ? "Inmueble publicado" : "Borrador guardado");
     router.push("/panel/inmuebles/");
   }
 
-  const colab = me.role === "colaborador";
-
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHead title={id ? "Editar inmueble" : colab ? "Nuevo borrador" : "Publicar inmueble"} sub={colab ? "Cuando lo envíes, tu asesor lo revisa y lo publica." : `Se publica en el perfil de ${org?.name ?? "la inmobiliaria"} y en el buscador.`} />
+      <PageHead title={id ? "Editar inmueble" : "Publicar inmueble"} sub={`Se publica en el perfil de ${org?.name ?? "la desarrolladora"}, en el buscador y en el inventario del portal de asesores.`} />
       <div className="grid gap-8">
         <Section title="Datos principales">
           {me.role === "superadmin" && (
-            <Field label="Inmobiliaria" htmlFor="f-org">
-              <Select id="f-org" value={f.orgId} onChange={(e) => setF((x) => ({ ...x, orgId: e.target.value, developmentId: "", asesorId: "" }))}>
+            <Field label="Desarrolladora" htmlFor="f-org">
+              <Select id="f-org" value={f.orgId} onChange={(e) => setF((x) => ({ ...x, orgId: e.target.value, developmentId: "" }))}>
                 {db.orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
               </Select>
             </Field>
@@ -225,6 +221,9 @@ export default function Editor() {
             })}
           </div>
           {err.credits && <p className="text-xs font-medium text-bad">{err.credits}</p>}
+          <Field label="Condiciones de pago" htmlFor="f-pt" hint="Enganche, apartado, mensualidades durante la obra, descuentos de contado.">
+            <Textarea id="f-pt" rows={3} {...inp("paymentTerms")} maxLength={600} />
+          </Field>
         </Section>
 
         <Section title="Ubicación">
@@ -267,26 +266,16 @@ export default function Editor() {
           )}
         </Section>
 
-        <Section title="Asignación">
-          {me.role === "org_admin" || me.role === "superadmin" ? (
-            <Field label="Asesor responsable" htmlFor="f-as" error={err.asesorId} hint="Recibe los prospectos de este inmueble.">
-              <Select id="f-as" {...inp("asesorId")}>
-                <option value="">Selecciona</option>
-                {asesores.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </Select>
-            </Field>
-          ) : (
-            <p className="text-ink-2">Asesor responsable: <strong className="text-ink">{db.users.find((u) => u.id === f.asesorId)?.name ?? "Sin asignar"}</strong></p>
-          )}
-          {(me.role === "org_admin" || me.role === "superadmin") && (
+        {me.role === "superadmin" && (
+          <Section title="Portada">
             <label className="flex items-center gap-2.5 text-sm font-medium"><input type="checkbox" className="size-4" checked={f.featured} onChange={(e) => set("featured", e.target.checked)} /> Destacar en la portada de Umbral</label>
-          )}
-        </Section>
+          </Section>
+        )}
 
         <div className="sticky bottom-0 -mx-4 flex flex-wrap justify-end gap-2 border-t border-line bg-paper/95 px-4 py-4 backdrop-blur sm:-mx-8 sm:px-8">
           <Button variant="ghost" onClick={() => router.push("/panel/inmuebles/")}>Cancelar</Button>
           <Button variant="outline" onClick={() => submit("borrador")}>Guardar borrador</Button>
-          {colab ? <Button onClick={() => submit("revision")}>Enviar a revisión</Button> : <Button onClick={() => submit("publicado")}>Publicar</Button>}
+          <Button onClick={() => submit("publicado")}>Publicar</Button>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { SITE } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Casas y departamentos nuevos en Guadalajara, Zapopan y Tlajomulco",
-  description: "Busca vivienda nueva por crédito (Infonavit, Fovissste, bancario), precio, recámaras, municipio y desarrolladora. Cada inmueble con su asesor responsable.",
+  description: "Busca departamentos nuevos por precio, recámaras, municipio, entrega y desarrolladora. Información actualizada por cada desarrolladora.",
   alternates: { canonical: "inmuebles/" },
 };
 
