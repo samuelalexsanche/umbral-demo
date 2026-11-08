@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, CurrencyDollar } from "@phosphor-icons/react";
 import type { Article, ArticleCategory } from "@/lib/types";
-import { useDB } from "@/lib/db";
+import { useDB, useHydrated } from "@/lib/db";
 import { asset } from "@/lib/format";
 import { orgOf, devHref, orgHref } from "@/lib/queries";
 import { Badge, Button, Empty, cx } from "../ui";
@@ -125,6 +125,8 @@ export function NewsIndex() {
 export function ArticleView({ id }: { id: string }) {
   const db = useDB();
   const a = db.articles.find((x) => x.id === id && x.published);
+  const ready = useHydrated();
+  if (!ready) return <div className="mx-auto h-[60dvh] max-w-[1400px] animate-pulse px-4 py-8"><div className="h-full rounded-[18px] bg-sunk" /></div>;
   if (!a) return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Esta nota no está disponible" action={<Button href="/noticias/">Ver noticias</Button>} /></div>;
   const org = orgOf(db, a.orgId);
   const dev = a.developmentId ? db.developments.find((d) => d.id === a.developmentId) : undefined;

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bed, Bathtub, Car, Ruler, Stack, Tree, SealCheck, Heart, WhatsappLogo, Clock, ArrowRight, Images, CheckCircle, Warning } from "@phosphor-icons/react";
-import { addView, can, useDB, useSessionUser } from "@/lib/db";
+import { addView, can, useDB, useHydrated, useSessionUser } from "@/lib/db";
 import { available, devHref, isSeededListing, orgHref, orgOf, devOf } from "@/lib/queries";
 import { CREDITS } from "@/lib/seed";
 import { asset, bathsLabel, deliveryLabel, money, priceLabel, TYPE_LABEL, waLink } from "@/lib/format";
@@ -18,6 +18,7 @@ export default function ListingDetail({ id }: { id: string }) {
   const db = useDB();
   const me = useSessionUser();
   const favs = useFavs();
+  const ready = useHydrated();
   const [contact, setContact] = useState(false);
   const [gallery, setGallery] = useState(false);
   const l = db.listings.find((x) => x.id === id);
@@ -27,6 +28,7 @@ export default function ListingDetail({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  if (!ready) return <div className="mx-auto h-[60dvh] max-w-[1400px] animate-pulse px-4 py-8"><div className="h-full rounded-[18px] bg-sunk" /></div>;
   if (!l) return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este inmueble ya no existe" action={<Button href="/inmuebles/">Ver inmuebles disponibles</Button>}>Puede que la desarrolladora lo haya retirado.</Empty></div>;
 
   const org = orgOf(db, l.orgId)!;

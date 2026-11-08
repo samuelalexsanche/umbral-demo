@@ -20,9 +20,12 @@ export default function Page() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState("");
-  function submit(e: React.FormEvent) {
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const r = login(email, pass);
+    setBusy(true);
+    const r = await login(email, pass);
+    setBusy(false);
     if (!r.ok) return setError(r.error);
     router.push(r.user.role === "asesor" ? "/panel/portal/" : "/panel/");
   }
@@ -35,7 +38,7 @@ export default function Page() {
         </div>
         <Field label="Correo" htmlFor="l-e"><Input id="l-e" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
         <Field label="Contraseña" htmlFor="l-p" error={error}><Input id="l-p" type="password" autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} aria-invalid={!!error} /></Field>
-        <Button type="submit" size="lg">Entrar</Button>
+        <Button type="submit" size="lg" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</Button>
         {!REMOTE && <p className="text-sm text-ink-3">Modo local: las cuentas de prueba usan la contraseña <code className="rounded bg-sunk px-1.5 py-0.5 font-semibold text-ink">demo1234</code>.</p>}
       </form>
       {!REMOTE && <div className="grid content-start gap-4">

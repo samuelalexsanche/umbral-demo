@@ -25,7 +25,7 @@ export default function Equipo() {
     setDone(null);
     setOpen(true);
   }
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (f.name.trim().length < 3) er.name = "Escribe nombre y apellido.";
@@ -33,7 +33,7 @@ export default function Equipo() {
     if (f.phone.replace(/\D/g, "").length < 10) er.phone = "Escribe un teléfono de 10 dígitos.";
     setErr(er);
     if (Object.keys(er).length) return;
-    const r = createUser(me!, f);
+    const r = await createUser(me!, f);
     if (!r.ok) return setErr({ email: r.error });
     setDone({ user: r.user, password: r.password });
   }

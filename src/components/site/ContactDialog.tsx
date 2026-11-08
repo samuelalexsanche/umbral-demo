@@ -34,7 +34,7 @@ export default function ContactDialog({
 
   const subject = listing ? listing.title : org.name;
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const err: Record<string, string> = {};
     if (form.name.trim().length < 2) err.name = "Escribe tu nombre para que el asesor sepa a quién llamar.";
@@ -42,7 +42,7 @@ export default function ContactDialog({
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email)) err.email = "Revisa el correo, por ejemplo nombre@correo.com.";
     setErrors(err);
     if (Object.keys(err).length) return;
-    createLead({
+    const ok = await createLead({
       orgId: org.id,
       listingId: listing?.id,
       developmentId: developmentId ?? listing?.developmentId,
@@ -54,6 +54,7 @@ export default function ContactDialog({
       source,
       transcript: transcript?.map((m) => ({ role: m.role, text: m.text })),
     });
+    if (!ok) return setErrors({ name: "No se pudo enviar. Intenta de nuevo o escríbenos por WhatsApp." });
     setSent(true);
   }
 

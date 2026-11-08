@@ -8,7 +8,8 @@ import {
   DownloadSimple, GraduationCap, Newspaper, Bank,
 } from "@phosphor-icons/react";
 import type { Role, User } from "@/lib/types";
-import { can, logout, roleLabel, useDB, useSessionUser, visibleLeads } from "@/lib/db";
+import { can, logout, roleLabel, setSyncErrorHandler, useDB, useHydrated, useSessionUser, visibleLeads } from "@/lib/db";
+import { toast } from "sonner";
 import { REMOTE } from "@/lib/backend";
 import { Avatar, Badge, Logo, OrgLogo, cx } from "../ui";
 
@@ -59,12 +60,15 @@ export default function PanelShell({ children }: { children: ReactNode }) {
   const nav = usePanelNav();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const ready = useHydrated();
   useEffect(() => setMounted(true), []);
+  useEffect(() => setSyncErrorHandler((m) => toast.error(m)), []);
   useEffect(() => setOpen(false), [path]);
   useEffect(() => {
-    if (mounted && !me) router.replace("/acceso/");
-    else if (mounted && me?.role === "asesor" && (path === "/panel" || path === "/panel/")) router.replace("/panel/portal/");
-  }, [mounted, me, router, path]);
+    if (!mounted || !ready) return;
+    if (!me) router.replace("/acceso/");
+    else if (me.role === "asesor" && (path === "/panel" || path === "/panel/")) router.replace("/panel/portal/");
+  }, [mounted, ready, me, router, path]);
 
   if (!mounted || !me) return <div className="grid min-h-dvh place-items-center text-ink-3">Cargando panel…</div>;
 
@@ -105,7 +109,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           </div>
         )}
         <div className="flex-1 overflow-y-auto">{side}</div>
-        <UserBox me={me} onOut={() => { logout(); router.push("/acceso/"); }} />
+        <UserBox me={me} onOut={async () => { await logout(); router.push("/acceso/"); }} />
       </aside>
 
       <div className="min-w-0">
@@ -119,7 +123,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
         {open && (
           <div className="fixed inset-x-0 top-14 bottom-0 z-[1100] grid content-start gap-5 overflow-y-auto bg-card p-4 lg:hidden">
             {side}
-            <UserBox me={me} onOut={() => { logout(); router.push("/acceso/"); }} />
+            <UserBox me={me} onOut={async () => { await logout(); router.push("/acceso/"); }} />
           </div>
         )}
         {!REMOTE && (

@@ -9,7 +9,7 @@ export default function RequestForm() {
   const [err, setErr] = useState<Record<string, string>>({});
   const [ok, setOk] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (f.company.trim().length < 2) er.company = "Escribe el nombre de tu desarrolladora.";
@@ -18,7 +18,7 @@ export default function RequestForm() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email)) er.email = "Revisa el correo.";
     setErr(er);
     if (Object.keys(er).length) return;
-    addPlatformRequest(f);
+    await addPlatformRequest(f);
     setOk(true);
   }
   if (ok)

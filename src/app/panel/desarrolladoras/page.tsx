@@ -24,7 +24,7 @@ export default function Desarrolladoras() {
   }, []);
   if (!me) return null;
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (f.name.trim().length < 3) er.name = "Escribe el nombre comercial.";
@@ -35,7 +35,7 @@ export default function Desarrolladoras() {
     if (Object.keys(er).length) return;
     const org = saveOrg(me!, { name: f.name.trim(), trust: DEFAULT_TRUST(), color: ["#2E3A45", "#3F5A3C", "#8A4B2A", "#5B4A6B", "#1F4E5F"][db.orgs.length % 5] });
     if (!org) return;
-    const r = createUser(me!, { name: f.adminName, email: f.adminEmail, phone: f.adminPhone || "33 0000 0000", title: "Dirección comercial", role: "desarrolladora", orgId: org.id });
+    const r = await createUser(me!, { name: f.adminName, email: f.adminEmail, phone: f.adminPhone || "33 0000 0000", title: "Dirección comercial", role: "desarrolladora", orgId: org.id });
     if (r.ok) setDone({ email: r.user.email, password: r.password, org: org.name });
   }
 

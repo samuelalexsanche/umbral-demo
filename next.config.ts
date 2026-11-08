@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Se publica en GitHub Pages bajo /umbral-demo; todo el sitio es estático.
-export const BASE_PATH = "/umbral-demo";
+// Sitio estático. En GitHub Pages vive bajo /umbral-demo; con dominio propio BASE_PATH va vacío.
+export const BASE_PATH = process.env.BASE_PATH ?? "/umbral-demo";
 
 const nextConfig: NextConfig = {
   output: "export",

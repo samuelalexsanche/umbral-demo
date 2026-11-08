@@ -10,7 +10,8 @@ export default function ApplicationForm() {
   const [sent, setSent] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
 
-  function submit(e: React.FormEvent) {
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (f.name.trim().length < 5) er.name = "Escribe nombre y apellido.";
@@ -19,7 +20,9 @@ export default function ApplicationForm() {
     if (!f.experience) er.experience = "Elige tu experiencia.";
     setErr(er);
     if (Object.keys(er).length) return;
-    const r = submitApplication({ ...f, name: f.name.trim(), phone: f.phone.trim(), company: f.company.trim(), zone: f.zone.trim(), message: f.message.trim() });
+    setBusy(true);
+    const r = await submitApplication({ ...f, name: f.name.trim(), phone: f.phone.trim(), company: f.company.trim(), zone: f.zone.trim(), message: f.message.trim() });
+    setBusy(false);
     if (!r.ok) return setErr({ email: r.error });
     setSent(true);
   }
@@ -55,7 +58,7 @@ export default function ApplicationForm() {
       </div>
       <Field label="Zonas donde trabajas (opcional)" htmlFor="a-z"><Input id="a-z" value={f.zone} onChange={set("zone")} placeholder="Zapopan, Providencia, Country" /></Field>
       <Field label="Cuéntanos de ti (opcional)" htmlFor="a-m"><Textarea id="a-m" rows={3} value={f.message} onChange={set("message")} placeholder="Certificaciones, desarrollos que has vendido, cómo consigues clientes." /></Field>
-      <Button type="submit" size="lg">Enviar solicitud</Button>
+      <Button type="submit" size="lg" disabled={busy}>{busy ? "Enviando…" : "Enviar solicitud"}</Button>
       <p className="text-center text-xs text-ink-3">El acceso lo otorga únicamente el administrador general de Umbral.</p>
     </form>
   );

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SealCheck, Clock, MapPin, Phone, EnvelopeSimple, CalendarBlank, Buildings, ArrowRight, Leaf, CheckCircle, Circle, Rocket } from "@phosphor-icons/react";
 import type { Article, Org } from "@/lib/types";
-import { useDB } from "@/lib/db";
+import { useDB, useHydrated } from "@/lib/db";
 import { available, devHref, isSeededListing, orgHref, orgOf, published } from "@/lib/queries";
 import { asset, creditName, deliveryLabel, moneyShort, priceLabel, TYPE_LABEL } from "@/lib/format";
 import { Badge, Button, Empty, OrgLogo, cx } from "../ui";
@@ -19,6 +19,8 @@ export function OrgProfile({ id }: { id: string }) {
   const [type, setType] = useState("");
   const [beds, setBeds] = useState(0);
   const [contact, setContact] = useState(false);
+  const ready = useHydrated();
+  if (!ready) return <div className="mx-auto h-[60dvh] max-w-[1400px] animate-pulse px-4 py-8"><div className="h-full rounded-[18px] bg-sunk" /></div>;
   if (!org || org.status !== "activa") return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este perfil no está disponible" action={<Button href="/desarrolladoras/">Ver desarrolladoras</Button>} /></div>;
 
   const listings = published(db).filter((l) => l.orgId === org.id);
@@ -141,6 +143,8 @@ export function DevelopmentProfile({ id }: { id: string }) {
   const [contact, setContact] = useState(false);
   const [img, setImg] = useState(0);
   const models = useMemo(() => (d ? published(db).filter((l) => l.developmentId === d.id) : []), [db, d]);
+  const ready = useHydrated();
+  if (!ready) return <div className="mx-auto h-[60dvh] max-w-[1400px] animate-pulse px-4 py-8"><div className="h-full rounded-[18px] bg-sunk" /></div>;
   if (!d) return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este desarrollo no está disponible" action={<Button href="/inmuebles/">Ver inmuebles</Button>} /></div>;
   const org = orgOf(db, d.orgId)!;
   const credits = Array.from(new Set(models.flatMap((m) => m.credits).concat(org.credits)));

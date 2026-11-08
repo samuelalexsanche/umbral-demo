@@ -15,11 +15,12 @@ export default function Cuenta() {
   if (!me) return null;
   const prof = p ?? { name: me.name, phone: me.phone, mobile: me.mobile ?? "", title: me.title, company: me.company ?? "", bio: me.bio ?? "" };
   const setProf = (k: keyof typeof prof) => (e: { target: { value: string } }) => setP({ ...prof, [k]: e.target.value });
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (a.length < 8) return setErr("Usa al menos 8 caracteres.");
     if (a !== b) return setErr("Las contraseñas no coinciden.");
-    changePassword(me!.id, a);
+    const r = await changePassword(me!.id, a);
+    if (!r.ok) return setErr(r.error ?? "No se pudo cambiar.");
     setA(""); setB(""); setErr("");
     toast.success("Contraseña actualizada");
   }

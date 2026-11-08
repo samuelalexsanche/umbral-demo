@@ -47,7 +47,7 @@ export function CreditRequest() {
   const [sent, setSent] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (f.name.trim().length < 2) er.name = "Escribe tu nombre.";
@@ -57,7 +57,7 @@ export function CreditRequest() {
     if (Object.keys(er).length) return;
     const dev = db.developments.find((d) => d.id === f.developmentId);
     const bank = db.banks.find((b) => b.id === f.bankId);
-    createLead({
+    const ok = await createLead({
       orgId: dev?.orgId,
       developmentId: dev?.id,
       name: f.name.trim(),
@@ -68,6 +68,7 @@ export function CreditRequest() {
       message: [`Quiere tramitar crédito bancario${bank ? ` con ${bank.bank}` : ""}.`, f.income && `Ingreso mensual aproximado: ${f.income}.`, f.message.trim()].filter(Boolean).join(" "),
       source: "credito",
     });
+    if (!ok) return setErr({ name: "No se pudo enviar. Intenta de nuevo en un momento." });
     setSent(true);
   }
 

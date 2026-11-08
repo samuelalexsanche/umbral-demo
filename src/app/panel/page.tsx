@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { ArrowRight, Eye, HouseLine, ChatsCircle, ClipboardText, Sparkle } from "@phosphor-icons/react";
-import { roleLabel, useDB, useSessionUser, visibleLeads, visibleListings } from "@/lib/db";
+import { importSeed, roleLabel, useDB, useSessionUser, visibleLeads, visibleListings } from "@/lib/db";
+import { REMOTE } from "@/lib/backend";
+import { toast } from "sonner";
 import { listingHref } from "@/lib/queries";
 import { creditName, relTime } from "@/lib/format";
 import { Badge, Button, Empty } from "@/components/ui";
@@ -43,6 +45,12 @@ export default function Resumen() {
         sub={`${roleLabel(me)}${me.orgId ? ` en ${db.orgs.find((o) => o.id === me.orgId)?.name}` : " de Umbral"}.`}
         actions={<Button href="/panel/inmuebles/editar/">Publicar inmueble</Button>}
       />
+      {REMOTE && me.role === "superadmin" && db.orgs.length === 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[14px] border border-line bg-card p-5">
+          <div><p className="font-semibold">La base de datos está vacía</p><p className="text-sm text-ink-2">Carga Grupo Casillas con sus 5 proyectos, las tasas bancarias, las primeras noticias, el material y la academia.</p></div>
+          <Button onClick={async () => { const r = await importSeed(me); if (r.ok) toast.success("Datos iniciales cargados"); else toast.error(r.error ?? "No se pudo cargar"); }}>Cargar datos iniciales</Button>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {kpis.map(({ i: Icon, label, v }) => (
           <div key={label} className="grid gap-2 rounded-[14px] border border-line bg-card p-5">

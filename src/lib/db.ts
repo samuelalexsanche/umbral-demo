@@ -1,20 +1,30 @@
 "use client";
-// Base de datos de la demo: vive en localStorage del navegador.
-// Todas las escrituras pasan por estas funciones para que la versión de producción
-// solo tenga que cambiar la implementación (API + base de datos) y no las pantallas.
+// Capa de datos de la plataforma. Las pantallas solo usan estas funciones.
+// - Modo local (sin variables de Supabase): todo vive en localStorage, para desarrollar sin backend.
+// - Modo Supabase: se hidrata con lo que el usuario puede ver (RLS) y cada cambio sube solo la diferencia.
 import { useSyncExternalStore } from "react";
 import { SEED, seedDB } from "./seed";
+import { REMOTE } from "./backend";
+import { adminUsers, loadAll, pushDiff, rpc, sb } from "./supabase";
 import type { Activity, AdvisorApplication, Article, AsesorTipo, BankRate, Course, DB, Development, Lead, Listing, Material, Org, PlatformRequest, Role, User } from "./types";
 
 const KEY = "umbral-db";
 const SESSION = "umbral-session";
 
+const EMPTY: DB = { version: SEED.version, orgs: [], developments: [], listings: [], users: [], leads: [], activity: [], requests: [], applications: [], banks: [], articles: [], materials: [], courses: [], amenities: [], rr: 0 };
+
 let cache: DB | null = null;
+let hydrated = !REMOTE;
 const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((l) => l());
 
 function load(): DB {
   if (cache) return cache;
-  if (typeof window === "undefined") return SEED;
+  if (typeof window === "undefined") return REMOTE ? EMPTY : SEED;
+  if (REMOTE) {
+    void hydrate();
+    return EMPTY;
+  }
   try {
     const raw = localStorage.getItem(KEY);
     const parsed = raw ? (JSON.parse(raw) as DB) : null;
@@ -27,18 +37,63 @@ function load(): DB {
 
 function save(next: DB) {
   cache = next;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(next));
-  } catch {
-    /* sin espacio o en modo privado: la demo sigue en memoria */
+  if (!REMOTE) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(next));
+    } catch {
+      /* sin espacio o en modo privado: sigue en memoria */
+    }
   }
-  listeners.forEach((l) => l());
+  notify();
+}
+
+/* ─── Supabase: hidratación ─────────────────────────────────── */
+let hydrating: Promise<void> | null = null;
+let authWired = false;
+
+function hydrate(): Promise<void> {
+  if (hydrating) return hydrating;
+  hydrating = (async () => {
+    if (!authWired) {
+      authWired = true;
+      sb().auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+          hydrating = null;
+          void hydrate();
+        }
+      });
+    }
+    const { data } = await sb().auth.getSession();
+    const uidNow = data.session?.user.id ?? null;
+    try {
+      const rows = await loadAll();
+      cache = { ...EMPTY, ...rows };
+    } catch {
+      cache = cache ?? EMPTY;
+    }
+    sessionCache = uidNow;
+    hydrated = true;
+    notify();
+  })();
+  return hydrating;
+}
+
+/** Recarga desde Supabase (después de un error de escritura, o para traer cambios de otros). */
+export function refresh() {
+  if (!REMOTE) return Promise.resolve();
+  hydrating = null;
+  return hydrate();
+}
+
+/** En modo Supabase, falso mientras llegan los datos. */
+export function useHydrated() {
+  return useSyncExternalStore(subscribe, () => hydrated, () => !REMOTE);
 }
 
 function subscribe(cb: () => void) {
   listeners.add(cb);
   const onStorage = (e: StorageEvent) => {
-    if (e.key === KEY || e.key === SESSION) {
+    if (!REMOTE && (e.key === KEY || e.key === SESSION)) {
       cache = null;
       sessionCache = undefined;
       cb();
@@ -52,7 +107,7 @@ function subscribe(cb: () => void) {
 }
 
 export function useDB(): DB {
-  return useSyncExternalStore(subscribe, load, () => SEED);
+  return useSyncExternalStore(subscribe, load, () => (REMOTE ? EMPTY : SEED));
 }
 
 export function getDB(): DB {
@@ -60,14 +115,29 @@ export function getDB(): DB {
 }
 
 export function resetDemo() {
+  if (REMOTE) return;
   save(seedDB());
   setSession(null);
 }
 
+let onSyncError: ((msg: string) => void) | null = null;
+/** Para avisar en pantalla cuando Supabase rechaza un cambio. */
+export function setSyncErrorHandler(fn: (msg: string) => void) {
+  onSyncError = fn;
+}
+
 function mutate(fn: (db: DB) => void) {
-  const next = structuredClone(load());
+  const prev = load();
+  const next = structuredClone(prev);
   fn(next);
   save(next);
+  if (REMOTE)
+    void pushDiff(prev, next).then((err) => {
+      if (err) {
+        onSyncError?.("No se pudo guardar el cambio. Se recargaron los datos.");
+        void refresh();
+      }
+    });
 }
 
 export const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
@@ -93,6 +163,10 @@ function uniqueSlug(base: string, taken: string[]) {
 /* ─── Sesión ─────────────────────────────────────────────────── */
 let sessionCache: string | null | undefined;
 function readSession(): string | null {
+  if (REMOTE) {
+    if (!hydrated) void hydrate();
+    return sessionCache ?? null;
+  }
   if (sessionCache !== undefined) return sessionCache;
   if (typeof window === "undefined") return null;
   try {
@@ -104,11 +178,13 @@ function readSession(): string | null {
 }
 function setSession(id: string | null) {
   sessionCache = id;
-  try {
-    if (id) localStorage.setItem(SESSION, id);
-    else localStorage.removeItem(SESSION);
-  } catch {}
-  listeners.forEach((l) => l());
+  if (!REMOTE) {
+    try {
+      if (id) localStorage.setItem(SESSION, id);
+      else localStorage.removeItem(SESSION);
+    } catch {}
+  }
+  notify();
 }
 
 export function useSessionUser(): User | null {
@@ -119,7 +195,25 @@ export function useSessionUser(): User | null {
   return u && u.active ? u : null;
 }
 
-export function login(email: string, password: string): { ok: true; user: User } | { ok: false; error: string } {
+type LoginResult = { ok: true; user: User } | { ok: false; error: string };
+
+export async function login(email: string, password: string): Promise<LoginResult> {
+  if (REMOTE) {
+    const { data, error } = await sb().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    if (error || !data.user) return { ok: false, error: "El correo o la contraseña no coinciden." };
+    await refresh();
+    const u = load().users.find((x) => x.id === data.user.id);
+    if (!u || !u.active) {
+      await sb().auth.signOut();
+      return { ok: false, error: "Esta cuenta está desactivada o no tiene perfil. Pide ayuda al administrador." };
+    }
+    const org = u.orgId ? load().orgs.find((o) => o.id === u.orgId) : null;
+    if (org && org.status === "suspendida") {
+      await sb().auth.signOut();
+      return { ok: false, error: `${org.name} está suspendida en la plataforma.` };
+    }
+    return { ok: true, user: u };
+  }
   const u = load().users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
   if (!u || u.password !== password) return { ok: false, error: "El correo o la contraseña no coinciden." };
   if (!u.active) return { ok: false, error: "Esta cuenta está desactivada. Pide a tu administrador que la reactive." };
@@ -129,12 +223,26 @@ export function login(email: string, password: string): { ok: true; user: User }
   return { ok: true, user: u };
 }
 
+/** Solo modo local: entrar con una cuenta de prueba sin contraseña. */
 export function loginAs(userId: string) {
+  if (REMOTE) return;
   setSession(userId);
 }
 
-export function logout() {
+export async function logout() {
+  if (REMOTE) {
+    await sb().auth.signOut();
+    sessionCache = null;
+    await refresh();
+    return;
+  }
   setSession(null);
+}
+
+export async function resetPassword(email: string) {
+  if (!REMOTE) return { ok: false as const, error: "Solo disponible con Supabase." };
+  const { error } = await sb().auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/panel/cuenta/` });
+  return error ? { ok: false as const, error: "No se pudo enviar el correo." } : { ok: true as const };
 }
 
 /* ─── Permisos ───────────────────────────────────────────────── */
@@ -199,7 +307,15 @@ export function tempPassword() {
 
 export type NewUser = { name: string; email: string; phone: string; title: string; role: Role; orgId?: string; asesorTipo?: AsesorTipo; company?: string };
 
-export function createUser(actor: User, data: NewUser): { ok: true; user: User; password: string } | { ok: false; error: string } {
+type Created = { ok: true; user: User; password: string } | { ok: false; error: string };
+
+export async function createUser(actor: User, data: NewUser): Promise<Created> {
+  if (REMOTE) {
+    if (actor.role !== "superadmin") return { ok: false, error: "Solo el administrador general da de alta usuarios." };
+    const r = await adminUsers<Created>({ action: "create", user: { ...data, title: data.title.trim() || roleLabel(data) } });
+    if (r.ok) await refresh();
+    return r;
+  }
   const db = load();
   if (actor.role !== "superadmin") return { ok: false, error: "Solo el administrador general da de alta usuarios." };
   if (db.users.some((x) => x.email.toLowerCase() === data.email.trim().toLowerCase())) return { ok: false, error: "Ya existe un usuario con ese correo." };
@@ -246,14 +362,19 @@ export function updateUser(actor: User, id: string, patch: Partial<User>) {
   });
 }
 
-export function changePassword(userId: string, password: string) {
+export async function changePassword(userId: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  if (REMOTE) {
+    const { error } = await sb().auth.updateUser({ password });
+    if (error) return { ok: false, error: error.message.includes("different") ? "Usa una contraseña distinta a la anterior." : "No se pudo cambiar la contraseña." };
+  }
   mutate((d) => {
     const u = d.users.find((x) => x.id === userId);
     if (u) {
-      u.password = password;
+      if (!REMOTE) u.password = password;
       u.mustChangePassword = false;
     }
   });
+  return { ok: true };
 }
 
 /* ─── Inmuebles ──────────────────────────────────────────────── */
@@ -307,6 +428,10 @@ export function deleteListing(actor: User, id: string) {
 }
 
 export function addView(id: string) {
+  if (REMOTE) {
+    void rpc("add_view", { listing: id }).catch(() => {});
+    return;
+  }
   const db = load();
   const l = db.listings.find((x) => x.id === id);
   if (!l) return;
@@ -390,13 +515,21 @@ function nextInterno(d: DB): string | undefined {
   return pick.id;
 }
 
-export function createLead(data: Omit<Lead, "id" | "status" | "notes" | "createdAt" | "asesorId">) {
+export async function createLead(data: Omit<Lead, "id" | "status" | "notes" | "createdAt" | "asesorId">): Promise<boolean> {
+  if (REMOTE) {
+    try {
+      await rpc("create_lead", { payload: data });
+      return true;
+    } catch {
+      return false;
+    }
+  }
   let lead: Lead | null = null;
   mutate((d) => {
     lead = { ...data, id: uid("ld"), asesorId: nextInterno(d), status: "nuevo", notes: [], createdAt: now() };
     d.leads.unshift(lead);
   });
-  return lead as unknown as Lead;
+  return !!lead;
 }
 
 export function updateLead(actor: User, id: string, patch: Partial<Lead>, note?: string) {
@@ -410,7 +543,12 @@ export function updateLead(actor: User, id: string, patch: Partial<Lead>, note?:
   });
 }
 
-export function addPlatformRequest(r: Omit<PlatformRequest, "id" | "createdAt">) {
+export async function addPlatformRequest(r: Omit<PlatformRequest, "id" | "createdAt">) {
+  if (REMOTE) {
+    const id = uid("rq");
+    await sb().from("requests").insert({ id, data: { ...r, id, createdAt: now() } });
+    return;
+  }
   mutate((d) => {
     d.requests.unshift({ ...r, id: uid("rq"), createdAt: now() });
   });
@@ -425,7 +563,14 @@ export function addAmenity(actor: User, name: string) {
 }
 
 /* ─── Asesores: solicitudes ──────────────────────────────────── */
-export function submitApplication(a: Omit<AdvisorApplication, "id" | "status" | "createdAt">): { ok: true } | { ok: false; error: string } {
+export async function submitApplication(a: Omit<AdvisorApplication, "id" | "status" | "createdAt">): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (REMOTE) {
+    try {
+      return await rpc<{ ok: true } | { ok: false; error: string }>("submit_application", { payload: a });
+    } catch {
+      return { ok: false, error: "No se pudo enviar. Intenta de nuevo en un momento." };
+    }
+  }
   const db = load();
   const email = a.email.trim().toLowerCase();
   if (db.users.some((x) => x.email === email)) return { ok: false, error: "Ese correo ya tiene acceso. Entra desde Acceso." };
@@ -436,10 +581,15 @@ export function submitApplication(a: Omit<AdvisorApplication, "id" | "status" | 
   return { ok: true };
 }
 
-export function approveApplication(actor: User, id: string, tipo: AsesorTipo) {
+export async function approveApplication(actor: User, id: string, tipo: AsesorTipo): Promise<Created> {
+  if (REMOTE) {
+    const r = await adminUsers<Created>({ action: "approve", applicationId: id, tipo });
+    if (r.ok) await refresh();
+    return r;
+  }
   const ap = load().applications.find((x) => x.id === id);
   if (!ap || actor.role !== "superadmin") return { ok: false as const, error: "No se encontró la solicitud." };
-  const r = createUser(actor, { name: ap.name, email: ap.email, phone: ap.phone, title: "Asesor inmobiliario", role: "asesor", asesorTipo: tipo, company: ap.company });
+  const r = await createUser(actor, { name: ap.name, email: ap.email, phone: ap.phone, title: "Asesor inmobiliario", role: "asesor", asesorTipo: tipo, company: ap.company });
   if (!r.ok) return r;
   mutate((d) => {
     const x = d.applications.find((y) => y.id === id);
@@ -545,4 +695,22 @@ export function deleteCourse(actor: User, id: string) {
     if (!x || !(actor.role === "superadmin" || (x.orgId && can.postForOrg(actor, x.orgId)))) return;
     d.courses = d.courses.filter((y) => y.id !== id);
   });
+}
+
+/* ─── Carga inicial en Supabase ──────────────────────────────── */
+/** Sube a una base vacía los datos de arranque (Grupo Casillas, tasas, noticias, material, academia). No toca usuarios. */
+export async function importSeed(actor: User): Promise<{ ok: boolean; error?: string }> {
+  if (!REMOTE || actor.role !== "superadmin") return { ok: false, error: "Solo el administrador, con Supabase conectado." };
+  const s = seedDB();
+  const tables: [string, { id: string }[]][] = [
+    ["orgs", s.orgs], ["developments", s.developments], ["listings", s.listings.map((l) => ({ ...l, createdBy: actor.id }))],
+    ["banks", s.banks], ["articles", s.articles.map((a) => ({ ...a, createdBy: actor.id }))], ["materials", s.materials], ["courses", s.courses],
+  ];
+  for (const [table, rows] of tables) {
+    const { error } = await sb().from(table).upsert(rows.map((d) => ({ id: d.id, data: d })), { onConflict: "id", ignoreDuplicates: true });
+    if (error) return { ok: false, error: `${table}: ${error.message}` };
+  }
+  await sb().from("settings").upsert([{ id: "amenities", data: s.amenities }, { id: "rr", data: 0 }], { onConflict: "id", ignoreDuplicates: true });
+  await refresh();
+  return { ok: true };
 }

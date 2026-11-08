@@ -27,8 +27,8 @@ export default function Asesores() {
   const apps = db.applications.filter((a) => a.status === tab);
   const advisors = db.users.filter((u) => u.role === "asesor");
 
-  function approve() {
-    const r = approveApplication(me!, open!.id, tipo);
+  async function approve() {
+    const r = await approveApplication(me!, open!.id, tipo);
     if (!r.ok) return toast.error(r.error);
     setDone({ email: r.user.email, password: r.password, name: r.user.name });
   }
