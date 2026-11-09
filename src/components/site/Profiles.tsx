@@ -5,7 +5,7 @@ import { SealCheck, Clock, MapPin, Phone, EnvelopeSimple, CalendarBlank, Buildin
 import type { Article, Org } from "@/lib/types";
 import { useDB, useHydrated } from "@/lib/db";
 import { available, devHref, isSeededListing, orgHref, orgOf, published } from "@/lib/queries";
-import { asset, creditName, deliveryLabel, moneyShort, priceLabel, TYPE_LABEL } from "@/lib/format";
+import { asset, creditName, deliveryLabel, moneyShort, priceLabel } from "@/lib/format";
 import { Badge, Button, Empty, OrgLogo, cx } from "../ui";
 import { ArticleCard } from "./News";
 import ListingCard from "./ListingCard";
@@ -16,15 +16,22 @@ import AgentChat from "./AgentChat";
 export function OrgProfile({ id }: { id: string }) {
   const db = useDB();
   const org = db.orgs.find((o) => o.id === id);
-  const [type, setType] = useState("");
-  const [beds, setBeds] = useState(0);
+  const [devF, setDevF] = useState("");
+  const [beds, setBeds] = useState(-1);
+  const [deliv, setDeliv] = useState("");
+  const [maxP, setMaxP] = useState(0);
+  const [sort, setSort] = useState("precio-asc");
   const [contact, setContact] = useState(false);
   const ready = useHydrated();
   if (!ready) return <div className="mx-auto h-[60dvh] max-w-[1400px] animate-pulse px-4 py-8"><div className="h-full rounded-[18px] bg-sunk" /></div>;
   if (!org || org.status !== "activa") return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este perfil no está disponible" action={<Button href="/desarrolladoras/">Ver desarrolladoras</Button>} /></div>;
 
   const listings = published(db).filter((l) => l.orgId === org.id);
-  const shown = listings.filter((l) => (!type || l.type === type) && (!beds || l.bedrooms >= beds));
+  const isStudio = (l: (typeof listings)[number]) => /^Estudio/.test(l.title);
+  const shown = listings
+    .filter((l) => (!devF || l.developmentId === devF) && (beds < 0 || (beds === 0 ? isStudio(l) : !isStudio(l) && l.bedrooms === beds)) && (!deliv || l.delivery === deliv) && (!maxP || l.price <= maxP))
+    .sort((a, b) => (sort === "precio-desc" ? b.price - a.price : sort === "m2" ? b.m2Built - a.m2Built : a.price - b.price));
+  const filtering = devF || beds >= 0 || deliv || maxP;
   const devs = db.developments.filter((d) => d.orgId === org.id);
   const posts = db.articles.filter((a) => a.orgId === org.id && a.published).sort((a, b) => b.date.localeCompare(a.date));
   const launches = devs.filter((d) => d.launch);
@@ -80,15 +87,36 @@ export function OrgProfile({ id }: { id: string }) {
           <section className="grid gap-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <h2 className="font-display text-2xl font-semibold tracking-tight">Todos sus inmuebles</h2>
-              <div className="flex gap-2">
-                <select aria-label="Tipo" value={type} onChange={(e) => setType(e.target.value)} className="h-10 rounded-full border border-line bg-card px-3 text-sm">
-                  <option value="">Todos los tipos</option>
-                  {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              <p className="text-sm text-ink-3 tabular">{shown.length} de {listings.length}</p>
+            </div>
+            <div className="grid gap-3 rounded-[14px] border border-line bg-card p-4">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Desarrollo">
+                {[{ id: "", name: "Todos" }, ...devs.filter((d) => listings.some((l) => l.developmentId === d.id))].map((d) => (
+                  <button key={d.id} type="button" aria-pressed={devF === d.id} onClick={() => setDevF(d.id)} className={`h-9 rounded-full border px-3.5 text-sm font-semibold transition-colors ${devF === d.id ? "border-ink bg-ink text-white" : "border-line bg-paper text-ink-2 hover:border-ink-3"}`}>{d.name}</button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <select aria-label="Recámaras" value={beds} onChange={(e) => setBeds(Number(e.target.value))} className="h-10 rounded-full border border-line bg-paper px-3 text-sm">
+                  <option value={-1}>Recámaras</option>
+                  <option value={0}>Estudio</option>
+                  {[1, 2, 3].map((n) => <option key={n} value={n}>{n} {n === 1 ? "recámara" : "recámaras"}</option>)}
                 </select>
-                <select aria-label="Recámaras" value={beds} onChange={(e) => setBeds(Number(e.target.value))} className="h-10 rounded-full border border-line bg-card px-3 text-sm">
-                  {[0, 1, 2, 3, 4].map((n) => <option key={n} value={n}>{n ? `${n}+ recámaras` : "Recámaras"}</option>)}
+                <select aria-label="Entrega" value={deliv} onChange={(e) => setDeliv(e.target.value)} className="h-10 rounded-full border border-line bg-paper px-3 text-sm">
+                  <option value="">Entrega</option>
+                  <option value="preventa">Preventa</option>
+                  <option value="entrega-inmediata">Entrega inmediata</option>
+                </select>
+                <select aria-label="Presupuesto máximo" value={maxP} onChange={(e) => setMaxP(Number(e.target.value))} className="h-10 rounded-full border border-line bg-paper px-3 text-sm">
+                  <option value={0}>Presupuesto</option>
+                  {[3, 4, 5, 6, 8].map((m) => <option key={m} value={m * 1_000_000}>Hasta ${m} M</option>)}
+                </select>
+                <select aria-label="Ordenar" value={sort} onChange={(e) => setSort(e.target.value)} className="h-10 rounded-full border border-line bg-paper px-3 text-sm">
+                  <option value="precio-asc">Menor precio</option>
+                  <option value="precio-desc">Mayor precio</option>
+                  <option value="m2">Más metros</option>
                 </select>
               </div>
+              {filtering && <button type="button" onClick={() => { setDevF(""); setBeds(-1); setDeliv(""); setMaxP(0); }} className="justify-self-start text-sm font-semibold text-ink-2 underline">Quitar filtros</button>}
             </div>
             {shown.length ? (
               <div className="grid gap-5 sm:grid-cols-2">

@@ -77,7 +77,7 @@ const developments: Development[] = [
     priceFrom: 3200000,
     amenities: ["Roof garden", "Gimnasio", "Coworking", "Juegos infantiles", "Asadores", "Área comercial", "Elevador"],
     delivery: "preventa", progress: 60, totalUnits: 0,
-    images: imgs("alcalde-mil", 7), launch: false,
+    images: imgs("alcalde-mil", 4), launch: false,
     createdAt: "2026-11-08T10:00:00Z",
   },
   {
@@ -88,7 +88,7 @@ const developments: Development[] = [
     priceFrom: 4500000,
     amenities: ["Elevador", "Estacionamiento para bicicletas", "Área comercial"],
     delivery: "entrega-inmediata", progress: 100, totalUnits: 0,
-    images: imgs("argentina-824", 7),
+    images: imgs("argentina-824", 10),
     createdAt: "2026-11-08T10:00:00Z",
   },
   {
@@ -100,7 +100,7 @@ const developments: Development[] = [
     priceFrom: 5800000,
     amenities: ["Roof garden", "Elevador", "Acceso controlado"],
     delivery: "entrega-inmediata", progress: 100, totalUnits: 34,
-    images: imgs("cedros-1180", 7),
+    images: imgs("cedros-1180", 9),
     createdAt: "2026-11-08T10:00:00Z",
   },
   {
@@ -113,7 +113,7 @@ const developments: Development[] = [
     amenities: ["Alberca", "Gimnasio", "Ludoteca", "Coworking", "Áreas verdes"],
     delivery: "preventa", progress: 0, totalUnits: 0,
     paymentTerms: "Enganche desde el 10%.",
-    images: imgs("punta-patria", 6), launch: true,
+    images: imgs("punta-patria", 1), launch: true,
     createdAt: "2026-11-08T10:00:00Z",
   },
   {
@@ -125,7 +125,7 @@ const developments: Development[] = [
     priceFrom: 3900000,
     amenities: ["Alberca", "Cancha de pádel", "Gimnasio", "Coworking", "Juegos infantiles", "Elevador"],
     delivery: "preventa", progress: 0, totalUnits: 0,
-    images: imgs("avila-leon", 7), launch: true,
+    images: imgs("avila-leon", 3), launch: true,
     createdAt: "2026-11-08T10:00:00Z",
   },
 ];
@@ -280,7 +280,7 @@ const courses: Course[] = [
 
 export function seedDB(): DB {
   return {
-    version: 13,
+    version: 14,
     orgs: structuredClone(orgs),
     developments: structuredClone(developments),
     listings: structuredClone(listings),
