@@ -17,7 +17,12 @@ export default function Cotizar() {
   const [years, setYears] = useState(20);
   const [bankId, setBankId] = useState("");
   const [discount, setDiscount] = useState(0);
-  useEffect(() => setId(new URLSearchParams(window.location.search).get("id") ?? ""), []);
+  const [unitId, setUnitId] = useState("");
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    setId(q.get("id") ?? "");
+    setUnitId(q.get("u") ?? "");
+  }, []);
   if (!me) return null;
 
   const options = db.listings.filter((l) => l.status === "publicado" && l.price > 0 && orgOf(db, l.orgId)?.status === "activa");
@@ -26,10 +31,13 @@ export default function Cotizar() {
   const bank = banks.find((b) => b.id === bankId) ?? banks[0];
   const org = l ? orgOf(db, l.orgId) : undefined;
   const dev = l?.developmentId ? db.developments.find((d) => d.id === l.developmentId) : undefined;
-  const price = l ? Math.max(0, l.price - discount) : 0;
+  const unitOptions = (l?.units ?? []).filter((x) => x.status === "disponible" && x.price > 0);
+  const unit = unitOptions.find((x) => x.id === unitId);
+  const list = unit?.price ?? l?.price ?? 0;
+  const price = Math.max(0, list - discount);
   const downAmt = (price * down) / 100;
   const pay = bank ? monthlyPayment(price - downAmt, bank.rate, years) : 0;
-  const folio = `COT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${(l?.id ?? "").slice(-4).toUpperCase()}`;
+  const folio = `COT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${(unit?.id ?? l?.id ?? "").replace(/\W/g, "").slice(-5).toUpperCase()}`;
   const today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
 
   return (
@@ -38,11 +46,19 @@ export default function Cotizar() {
         <PageHead title="Cotización personalizada" sub="Elige el inmueble y los datos del cliente. Al imprimir, guarda como PDF; lleva tu nombre, teléfono, celular y correo." />
         <div className="mb-8 grid gap-4 rounded-[14px] border border-line bg-card p-5 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Inmueble" htmlFor="q-l">
-            <Select id="q-l" value={id} onChange={(e) => setId(e.target.value)}>
+            <Select id="q-l" value={id} onChange={(e) => { setId(e.target.value); setUnitId(""); }}>
               <option value="">Elige un inmueble</option>
               {options.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
             </Select>
           </Field>
+          {unitOptions.length > 0 && (
+            <Field label="Unidad" htmlFor="q-u" hint="Sin unidad, se cotiza el precio desde.">
+              <Select id="q-u" value={unitId} onChange={(e) => setUnitId(e.target.value)}>
+                <option value="">Precio desde</option>
+                {unitOptions.map((x) => <option key={x.id} value={x.id}>{x.id} · piso {x.floor} · {x.m2} m² · {money(x.price)}</option>)}
+              </Select>
+            </Field>
+          )}
           <Field label="Nombre del cliente" htmlFor="q-c"><Input id="q-c" value={client} onChange={(e) => setClient(e.target.value)} /></Field>
           <Field label="Descuento (MXN, opcional)" htmlFor="q-d" hint="Solo si la desarrolladora lo autorizó."><Input id="q-d" inputMode="numeric" value={discount ? String(discount) : ""} onChange={(e) => setDiscount(Number(e.target.value.replace(/\D/g, "")) || 0)} /></Field>
           <Field label="Enganche" htmlFor="q-e"><Select id="q-e" value={down} onChange={(e) => setDown(Number(e.target.value))}>{[10, 15, 20, 25, 30, 40, 50].map((n) => <option key={n} value={n}>{n}%</option>)}</Select></Field>
@@ -73,19 +89,20 @@ export default function Cotizar() {
             <img src={asset(l.images[0])} alt="" className="aspect-[4/5] w-full rounded-[10px] object-cover" />
             <div className="grid content-start gap-2">
               <p className="font-display text-2xl font-semibold leading-tight">{l.title}</p>
+              {unit && <p className="text-sm font-semibold">Unidad {unit.id}{unit.tower ? `, torre ${unit.tower}` : ""}{unit.floor ? `, piso ${unit.floor}` : ""} · modelo {unit.model} · vista {unit.view.toLowerCase()}{unit.delivery ? ` · entrega ${unit.delivery}` : ""}</p>}
               <p className="text-sm text-ink-2">{dev ? `${dev.name} · ` : ""}{dev?.address ?? `${l.colonia}, ${l.municipio}`}</p>
               <p className="text-sm text-ink-2">{org.name} · {deliveryLabel(l.delivery, l.deliveryDate)}</p>
               <ul className="mt-2 grid grid-cols-2 gap-1 text-sm">
                 <li>{l.bedrooms} {l.bedrooms === 1 ? "recámara" : "recámaras"}</li>
-                <li>{bathsLabel(l.bathrooms)}</li>
-                <li>{l.parking} {l.parking === 1 ? "cajón" : "cajones"}</li>
-                {l.m2Built > 0 && <li>{l.m2Built} m² construidos</li>}
+                <li>{bathsLabel(unit?.bathrooms ?? l.bathrooms)}</li>
+                <li>{unit?.parking ?? l.parking} {(unit?.parking ?? l.parking) === 1 ? "cajón" : "cajones"}</li>
+                {(unit?.m2 ?? l.m2Built) > 0 && <li>{unit?.m2 ?? l.m2Built} m² construidos</li>}
               </ul>
               {l.features.length > 0 && <p className="text-sm text-ink-2">{l.features.join(" · ")}</p>}
             </div>
           </section>
           <section className="grid gap-2 rounded-[10px] bg-[#f4f2ec] p-5 text-sm">
-            <Row k="Precio de lista" v={money(l.price)} />
+            <Row k={unit ? "Precio de lista" : "Precio desde"} v={money(list)} />
             {discount > 0 && <Row k="Descuento" v={`- ${money(discount)}`} />}
             <Row k="Precio cotizado" v={money(price)} strong />
             <Row k={`Enganche (${down}%)`} v={money(Math.round(downAmt))} />

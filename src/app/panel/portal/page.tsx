@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import { FilePdf, Eye, DownloadSimple } from "@phosphor-icons/react";
+import { Fragment, useState } from "react";
+import { FilePdf, Eye, DownloadSimple, CaretDown } from "@phosphor-icons/react";
 import { can, useDB, useSessionUser } from "@/lib/db";
 import { devHref, listingHref, orgOf } from "@/lib/queries";
-import { asset, deliveryLabel, moneyShort, priceLabel, relTime } from "@/lib/format";
+import { asset, deliveryLabel, money, moneyShort, priceLabel, relTime } from "@/lib/format";
 import { Badge, Button, Empty, Input, OrgLogo, Select } from "@/components/ui";
 import { Guard, PageHead } from "@/components/panel/Shell";
 
@@ -15,6 +15,7 @@ export default function Portal() {
   const [q, setQ] = useState("");
   const [dev, setDev] = useState("");
   const [beds, setBeds] = useState(0);
+  const [open, setOpen] = useState<string | null>(null);
   if (!me) return null;
   const devs = db.developments.filter((d) => orgOf(db, d.orgId)?.status === "activa");
   const units = db.listings.filter((l) => (l.status === "publicado" || l.status === "vendido") && orgOf(db, l.orgId)?.status === "activa");
@@ -70,8 +71,9 @@ export default function Portal() {
             <thead className="border-b border-line text-ink-3"><tr>{["Inmueble", "Rec.", "Baños", "m²", "Precio", "Disponibles", "Condiciones", "Actualizado", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead>
             <tbody>
               {shown.map((l) => (
-                <tr key={l.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3"><Link href={listingHref(l)} className="font-semibold hover:underline">{l.title}</Link><p className="text-ink-3">{orgOf(db, l.orgId)?.name}</p></td>
+                <Fragment key={l.id}>
+                <tr className="border-b border-line last:border-0">
+                  <td className="px-4 py-3"><Link href={listingHref(l)} className="font-semibold hover:underline">{l.title}</Link><p className="text-ink-3">{orgOf(db, l.orgId)?.name}</p>{l.units && l.units.length > 0 && <button type="button" onClick={() => setOpen(open === l.id ? null : l.id)} aria-expanded={open === l.id} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-ink-2 hover:text-ink"><CaretDown size={12} className={open === l.id ? "rotate-180" : ""} /> {open === l.id ? "Ocultar" : "Ver"} {l.units.length} unidades</button>}</td>
                   <td className="px-4 py-3 tabular">{l.bedrooms}</td>
                   <td className="px-4 py-3 tabular">{l.bathrooms}</td>
                   <td className="px-4 py-3 tabular">{l.m2Built || "-"}</td>
@@ -81,6 +83,32 @@ export default function Portal() {
                   <td className="px-4 py-3 text-ink-3">{relTime(l.updatedAt)}</td>
                   <td className="px-4 py-3 text-right">{l.status === "publicado" && l.price > 0 && <Button size="sm" href={`/panel/cotizar/?id=${l.id}`}><FilePdf size={15} /> Cotizar</Button>}</td>
                 </tr>
+                {open === l.id && l.units && (
+                  <tr className="border-b border-line bg-paper"><td colSpan={9} className="px-4 py-3">
+                    <table className="w-full text-left text-xs">
+                      <thead className="text-ink-3"><tr>{["Unidad", "Piso", "Modelo", "Vista", "Entrega", "Rec.", "Baños", "Cajones", "m²", "Precio", "Estatus", ""].map((h) => <th key={h} className="px-2 py-1.5 font-semibold">{h}</th>)}</tr></thead>
+                      <tbody>
+                        {[...l.units].sort((a, b) => (a.status === b.status ? a.price - b.price : a.status === "disponible" ? -1 : 1)).map((x) => (
+                          <tr key={x.id} className="border-t border-line">
+                            <td className="px-2 py-1.5 font-semibold">{x.id}</td>
+                            <td className="px-2 py-1.5 tabular">{x.floor || "-"}</td>
+                            <td className="px-2 py-1.5">{x.model}</td>
+                            <td className="px-2 py-1.5">{x.view}</td>
+                            <td className="px-2 py-1.5 tabular">{x.delivery ?? "-"}</td>
+                            <td className="px-2 py-1.5 tabular">{x.bedrooms}</td>
+                            <td className="px-2 py-1.5 tabular">{x.bathrooms}</td>
+                            <td className="px-2 py-1.5 tabular">{x.parking}</td>
+                            <td className="px-2 py-1.5 tabular">{x.m2}</td>
+                            <td className="px-2 py-1.5 font-semibold tabular">{x.price ? money(x.price) : "-"}</td>
+                            <td className="px-2 py-1.5">{x.status === "disponible" ? <Badge tone="ok">Disponible</Badge> : <Badge>{x.status === "apartado" ? "Apartado" : "Vendido"}</Badge>}</td>
+                            <td className="px-2 py-1.5 text-right">{x.status === "disponible" && x.price > 0 && <Link href={`/panel/cotizar/?id=${l.id}&u=${encodeURIComponent(x.id)}`} className="font-semibold underline">Cotizar</Link>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </td></tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>

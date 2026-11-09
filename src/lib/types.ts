@@ -102,6 +102,23 @@ export interface Development {
   createdAt: string;
 }
 
+/** Unidad concreta del inventario de una desarrolladora (departamento A-406, etc.). */
+export interface Unit {
+  id: string;
+  tower?: string;
+  floor: number;
+  model: string;
+  view: string;
+  delivery?: string;
+  bedrooms: number;
+  bathrooms: number;
+  parking: number;
+  m2: number;
+  /** 0 cuando la desarrolladora no publica el precio (apartadas). */
+  price: number;
+  status: "disponible" | "apartado" | "vendido";
+}
+
 export interface Listing {
   id: string;
   slug: string;
@@ -124,6 +141,8 @@ export interface Listing {
   unitsTotal?: number;
   credits: CreditId[];
   paymentTerms?: string;
+  /** Unidades reales de esta tipología. Si existen, precio y disponibilidad salen de aquí. */
+  units?: Unit[];
   amenities: string[];
   features: string[];
   description: string;

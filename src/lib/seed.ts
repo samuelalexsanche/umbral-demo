@@ -1,7 +1,8 @@
 // Datos iniciales. Grupo Casillas y sus proyectos se cargaron a partir de su material de redes
 // (carpeta de Drive del 8-nov-2026). Lo marcado como "por confirmar" en docs/produccion.md
 // debe validarse con la desarrolladora antes de abrir el sitio al público.
-import type { AdvisorApplication, Article, BankRate, Course, Credit, DB, Development, Lead, Listing, Material, Org, User } from "./types";
+import type { AdvisorApplication, Article, BankRate, Course, Credit, DB, Development, Lead, Listing, Material, Org, Unit, User } from "./types";
+import { INVENTARIO_FECHA, UNITS } from "./inventario-casillas";
 
 export const CREDITS: Credit[] = [
   {
@@ -82,7 +83,7 @@ const developments: Development[] = [
     id: "dev-argentina", slug: "argentina-824", name: "Argentina 824", orgId: "org-casillas", kind: "torre",
     colonia: "Colonia Moderna", municipio: "Guadalajara", lat: 20.6648, lng: -103.3606,
     description: "Edificio de departamentos con entrega inmediata a minutos de la Colonia Americana. Arquitectura de ladrillo aparente, terraza común y pocas unidades por piso.",
-    typologies: "1 y 2 recámaras y Lock-Off, desde 53 m²",
+    typologies: "1 y 2 recámaras y Lock-Off, desde 52 m²",
     priceFrom: 4500000,
     amenities: ["Elevador", "Estacionamiento para bicicletas", "Área comercial"],
     delivery: "entrega-inmediata", progress: 100, totalUnits: 0,
@@ -94,7 +95,7 @@ const developments: Development[] = [
     colonia: "Ciudad Granja", municipio: "Zapopan", address: "Av. Cedros 1180, Ciudad Granja, Zapopan",
     lat: 20.6862, lng: -103.4478,
     description: "Proyecto boutique de solo 34 departamentos en Ciudad Granja, Zapopan, con entrega inmediata. A minutos del Estadio Akron y del Parque Metropolitano. Terraza común en azotea.",
-    typologies: "2 recámaras, 2 baños, 2 cajones, 94 m²",
+    typologies: "2 recámaras, 2 baños, 2 cajones",
     priceFrom: 5800000,
     amenities: ["Roof garden", "Elevador", "Acceso controlado"],
     delivery: "entrega-inmediata", progress: 100, totalUnits: 34,
@@ -119,7 +120,7 @@ const developments: Development[] = [
     colonia: "Country Club", municipio: "Guadalajara", address: "Av. Ávila Camacho esquina Enrique Díaz de León, Zona Country, Guadalajara",
     lat: 20.7021, lng: -103.3741,
     description: "Departamentos en preventa en la Zona Country, a 5 minutos del Country Club, Midtown, Punto Sao Paulo y el Parque Ávila Camacho, a pasos de la Línea 3. Alberca con vista a la ciudad, cancha de pádel, gimnasio, coworking y área infantil.",
-    typologies: "Estudios, 1, 2 y 3 recámaras",
+    typologies: "1, 2 y 3 recámaras",
     priceFrom: 3900000,
     amenities: ["Alberca", "Cancha de pádel", "Gimnasio", "Coworking", "Juegos infantiles", "Elevador"],
     delivery: "preventa", progress: 0, totalUnits: 0,
@@ -128,42 +129,72 @@ const developments: Development[] = [
   },
 ];
 
-const devById = Object.fromEntries(developments.map((d) => [d.id, d]));
 
-type L = Omit<Listing, "id" | "slug" | "colonia" | "municipio" | "lat" | "lng" | "views" | "createdAt" | "updatedAt" | "featured" | "amenities" | "images" | "orgId" | "createdBy"> &
-  Partial<Pick<Listing, "featured" | "images">> & { key: string; developmentId: string };
+// Una ficha por desarrollo y número de recámaras, armada con las unidades reales del inventario de Grupo Casillas.
+// Precio "desde" y m² mínimo salen de las unidades disponibles; las apartadas se muestran pero no cuentan.
+const BEDS_LABEL = ["Estudio", "1 recámara", "2 recámaras", "3 recámaras"];
+const FEATURES: Record<string, string[]> = {
+  "dev-alcalde": ["Precio de preventa", "Rooftop con amenidades", "A pasos del tren GDL-CDMX"],
+  "dev-argentina": ["Entrega inmediata", "A minutos de la Colonia Americana", "Edificio con pocas unidades"],
+  "dev-cedros": ["Proyecto boutique de 34 departamentos", "Dos cajones de estacionamiento"],
+  "dev-patria": ["Precio de preventa", "Enganche desde 10%", "Alberca, gimnasio, ludoteca y coworking"],
+  "dev-avila": ["Precio de preventa", "A 5 minutos del Country Club", "A pasos de la Línea 3"],
+};
+const isStudio = (u: Unit) => u.model === "E";
+const groupKey = (u: Unit) => (isStudio(u) ? 0 : u.bedrooms);
 
-// Una ficha por tipología conocida. Recámaras, baños y m² que no vienen en los artes están por confirmar.
-const raw: L[] = [
-  { key: "alcalde-mil-estudio", title: "Estudio en Alcalde Mil", developmentId: "dev-alcalde", status: "publicado", type: "departamento", price: 3200000, bedrooms: 1, bathrooms: 1, parking: 0, m2Built: 0, levels: 1, delivery: "preventa", credits: ["bancario", "contado"], features: ["Precio de preventa", "Rooftop con amenidades", "A pasos del tren GDL-CDMX"], description: "Estudio en preventa en la Colonia Moderna. Ideal para vivir cerca del centro o como inversión para renta.", featured: true },
-  { key: "alcalde-mil-2-recamaras", title: "Departamento de 2 recámaras en Alcalde Mil", developmentId: "dev-alcalde", status: "borrador", type: "departamento", price: 0, bedrooms: 2, bathrooms: 2, parking: 1, m2Built: 0, levels: 1, delivery: "preventa", credits: ["bancario", "contado"], features: ["Precio de preventa"], description: "Pendiente: precio y metros cuadrados." },
-  { key: "argentina-824-1-recamara", title: "Departamento de 1 recámara en Argentina 824", developmentId: "dev-argentina", status: "publicado", type: "departamento", price: 4500000, bedrooms: 1, bathrooms: 1, parking: 1, m2Built: 53, levels: 1, delivery: "entrega-inmediata", credits: ["bancario", "contado"], features: ["Entrega inmediata", "A minutos de la Colonia Americana", "Edificio con pocas unidades"], description: "Departamento listo para habitar en la Colonia Moderna, a minutos de la Colonia Americana, con su vida cultural y gastronómica.", featured: true },
-  { key: "cedros-1180-2-recamaras", title: "Departamento de 2 recámaras en Cedros 1180", developmentId: "dev-cedros", status: "publicado", type: "departamento", price: 5800000, bedrooms: 2, bathrooms: 2, parking: 2, m2Built: 94, levels: 1, delivery: "entrega-inmediata", unitsAvailable: 1, unitsTotal: 34, credits: ["bancario", "contado"], features: ["Último departamento disponible", "Proyecto boutique de 34 departamentos", "Dos cajones de estacionamiento"], description: "Último departamento disponible del proyecto: dos recámaras, dos baños y dos cajones, con entrega inmediata en Ciudad Granja.", featured: true },
-  { key: "punta-patria-3-recamaras", title: "Departamento de 3 recámaras en Punta Patria", developmentId: "dev-patria", status: "publicado", type: "departamento", price: 3200000, bedrooms: 3, bathrooms: 2, parking: 1, m2Built: 0, levels: 1, delivery: "preventa", credits: ["bancario", "contado"], paymentTerms: "Enganche desde el 10%.", features: ["Precio de preventa", "Enganche desde 10%", "Alberca, gimnasio, ludoteca y coworking"], description: "Departamento de tres recámaras en preventa sobre Av. Patria, con amenidades para toda la familia.", featured: true },
-  { key: "avila-leon-1-recamara", title: "Departamento de 1 recámara en Ávila & León", developmentId: "dev-avila", status: "publicado", type: "departamento", price: 3900000, bedrooms: 1, bathrooms: 1, parking: 1, m2Built: 0, levels: 1, delivery: "preventa", credits: ["bancario", "contado"], features: ["Precio de preventa", "A 5 minutos del Country Club", "A pasos de la Línea 3"], description: "Departamento en preventa en la Zona Country, con alberca, pádel, gimnasio y coworking.", featured: true },
-];
-
-const listings: Listing[] = raw.map((r, i) => {
-  const d = devById[r.developmentId];
-  const { key, ...rest } = r;
-  return {
-    ...rest,
-    id: `l-${i + 1}`,
-    slug: key,
-    orgId: d.orgId,
-    createdBy: "u-admin",
-    colonia: d.colonia,
-    municipio: d.municipio,
-    lat: d.lat,
-    lng: d.lng,
-    amenities: d.amenities,
-    images: r.images ?? d.images,
-    featured: r.featured ?? false,
-    views: 0,
-    createdAt: "2026-11-08T15:00:00Z",
-    updatedAt: "2026-11-08T15:00:00Z",
-  };
+const listings: Listing[] = developments.flatMap((d) => {
+  const groups = new Map<number, Unit[]>();
+  for (const unit of UNITS[d.id] ?? []) groups.set(groupKey(unit), [...(groups.get(groupKey(unit)) ?? []), unit]);
+  return [...groups.entries()].sort((x, y) => x[0] - y[0]).map(([k, units]) => {
+    const avail = units.filter((x) => x.status === "disponible" && x.price > 0);
+    const base = avail.length ? avail : units;
+    const min = <K extends keyof Unit>(f: K) => Math.min(...base.map((x) => x[f] as number));
+    const max = <K extends keyof Unit>(f: K) => Math.max(...base.map((x) => x[f] as number));
+    const label = BEDS_LABEL[k];
+    const title = k === 0 ? `Estudio en ${d.name}` : `Departamento de ${label} en ${d.name}`;
+    const m2a = min("m2"), m2b = max("m2");
+    return {
+      id: `l-${d.slug}-${k}`,
+      slug: `${d.slug}-${k === 0 ? "estudio" : `${k}-recamara${k > 1 ? "s" : ""}`}`,
+      title,
+      orgId: d.orgId,
+      developmentId: d.id,
+      createdBy: "u-admin",
+      status: avail.length ? "publicado" : "pausado",
+      type: "departamento",
+      price: avail.length ? min("price") : 0,
+      bedrooms: Math.max(1, k),
+      bathrooms: min("bathrooms"),
+      parking: max("parking"),
+      m2Built: m2a,
+      levels: 1,
+      delivery: d.delivery,
+      unitsAvailable: avail.length,
+      credits: ["bancario", "contado"],
+      paymentTerms: d.paymentTerms,
+      units,
+      amenities: d.amenities,
+      features: FEATURES[d.id] ?? [],
+      description: `${title}${m2a === m2b ? ` de ${m2a} m²` : `, de ${m2a} a ${m2b} m²`}. ${avail.length} ${avail.length === 1 ? "unidad disponible" : "unidades disponibles"} al ${new Date(INVENTARIO_FECHA).toLocaleDateString("es-MX", { day: "numeric", month: "long" })}. ${d.description}`,
+      colonia: d.colonia,
+      municipio: d.municipio,
+      lat: d.lat,
+      lng: d.lng,
+      images: d.images,
+      featured: avail.length > 0 && k === Math.min(...[...groups.entries()].filter(([, us]) => us.some((x) => x.status === "disponible" && x.price > 0)).map(([g]) => g)),
+      views: 0,
+      createdAt: INVENTARIO_FECHA,
+      updatedAt: INVENTARIO_FECHA,
+    } satisfies Listing;
+  });
 });
+
+// Los "desde" y el número de unidades de cada desarrollo se recalculan con el inventario.
+for (const d of developments) {
+  const avail = (UNITS[d.id] ?? []).filter((x) => x.status === "disponible" && x.price > 0);
+  d.priceFrom = avail.length ? Math.min(...avail.map((x) => x.price)) : undefined;
+}
 
 const u = (id: string, name: string, email: string, role: User["role"], title: string, extra: Partial<User> = {}): User => ({
   id, name, email, password: "demo1234", role, phone: "", title, active: true,
@@ -197,14 +228,14 @@ const articles: Article[] = [
     id: "ar-1", slug: "alcalde-mil-60-por-ciento-de-avance", category: "avance", orgId: "org-casillas", developmentId: "dev-alcalde",
     title: "Alcalde Mil alcanza 60% de avance de obra",
     summary: "La torre de la Colonia Moderna sigue en preventa con estudios, departamentos de 1 y 2 recámaras y Lock-Off.",
-    body: "Grupo Casillas reporta 60% de avance en Alcalde Mil. El proyecto sigue en preventa con estudios, departamentos de 1 y 2 recámaras y unidades Lock-Off, desde 3.2 millones de pesos.\n\nAlcalde Mil está en la Colonia Moderna, a pasos de la futura estación del tren Guadalajara-CDMX y del Parque Agua Azul.",
+    body: "Grupo Casillas reporta 60% de avance en Alcalde Mil. El proyecto sigue en preventa con estudios, departamentos de 1 y 2 recámaras y unidades Lock-Off, desde 2.47 millones de pesos.\n\nAlcalde Mil está en la Colonia Moderna, a pasos de la futura estación del tren Guadalajara-CDMX y del Parque Agua Azul.",
     image: "/img/casillas/pub/alcalde-mil-avance.webp", published: true, date: "2026-11-01T10:00:00Z", createdBy: "u-casillas",
   },
   {
     id: "ar-2", slug: "avila-leon-preventa-zona-country", category: "lanzamiento", orgId: "org-casillas", developmentId: "dev-avila",
     title: "Ávila & León abre preventa en la Zona Country",
-    summary: "Departamentos de 1, 2 y 3 recámaras desde 3.9 millones de pesos, en la esquina de Ávila Camacho y Enrique Díaz de León.",
-    body: "Ávila & León es el proyecto de Grupo Casillas en la Zona Country. Tiene departamentos de 1, 2 y 3 recámaras y estudios, con alberca, cancha de pádel, gimnasio, coworking y área infantil.\n\nLa preventa arranca desde 3.9 millones de pesos.",
+    summary: "Departamentos de 1, 2 y 3 recámaras desde 4.09 millones de pesos, en la esquina de Ávila Camacho y Enrique Díaz de León.",
+    body: "Ávila & León es el proyecto de Grupo Casillas en la Zona Country. Tiene departamentos de 1, 2 y 3 recámaras y estudios, con alberca, cancha de pádel, gimnasio, coworking y área infantil.\n\nLa preventa arranca desde 4.09 millones de pesos.",
     image: "/img/casillas/pub/avila-leon-preventa.webp", published: true, date: "2026-10-20T10:00:00Z", createdBy: "u-casillas",
   },
   {
@@ -248,7 +279,7 @@ const courses: Course[] = [
 
 export function seedDB(): DB {
   return {
-    version: 11,
+    version: 12,
     orgs: structuredClone(orgs),
     developments: structuredClone(developments),
     listings: structuredClone(listings),
