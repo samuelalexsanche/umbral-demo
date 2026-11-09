@@ -41,7 +41,7 @@ export default function Cotizar() {
   const today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <Guard roles={["asesor", "superadmin"]} allow={can.usePortal}>
+    <Guard roles={["asesor", "desarrolladora", "superadmin"]} allow={can.usePortal}>
       <div className="print:hidden">
         <PageHead title="Cotización personalizada" sub="Elige el inmueble y los datos del cliente. Al imprimir, guarda como PDF; lleva tu nombre, teléfono, celular y correo." />
         <div className="mb-8 grid gap-4 rounded-[14px] border border-line bg-card p-5 sm:grid-cols-2 lg:grid-cols-3">

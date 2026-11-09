@@ -23,7 +23,7 @@ export default function Portal() {
   const updated = units.reduce((m, l) => (l.updatedAt > m ? l.updatedAt : m), "");
 
   return (
-    <Guard roles={["asesor", "superadmin"]} allow={can.usePortal}>
+    <Guard roles={["asesor", "desarrolladora", "superadmin"]} allow={can.usePortal}>
       <PageHead
         title="Inventario"
         sub={`Información en tiempo real de ${devs.length} desarrollos. ${updated ? `Último cambio de una desarrolladora: ${relTime(updated)}.` : ""}`}

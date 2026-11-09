@@ -19,7 +19,7 @@ export default function Descargas() {
   const list = db.materials.filter((m) => (!dev || m.developmentId === dev) && (!kind || m.kind === kind));
 
   return (
-    <Guard roles={["asesor", "superadmin"]} allow={can.usePortal}>
+    <Guard roles={["asesor", "desarrolladora", "superadmin"]} allow={can.usePortal}>
       <PageHead title="Descargas" sub="Material de venta de cada desarrollo: brochure, renders, videos y publicidad. Lo sube y actualiza la desarrolladora." />
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <Select aria-label="Desarrollo" value={dev} onChange={(e) => setDev(e.target.value)} className="w-auto">

@@ -166,7 +166,7 @@ export interface User {
   email: string;
   password: string;
   role: Role;
-  /** Solo para usuarios de una desarrolladora. */
+  /** Desarrolladora a la que pertenece (usuarios de la desarrolladora y sus asesores). Un asesor sin orgId es independiente. */
   orgId?: string;
   asesorTipo?: AsesorTipo;
   company?: string;
@@ -228,9 +228,18 @@ export interface PlatformRequest {
 
 export type ApplicationStatus = "pendiente" | "aprobada" | "rechazada";
 
-/** Solicitud de un asesor para entrar a la plataforma. */
+/**
+ * Solicitud de acceso de un asesor.
+ * - Sin orgId: asesor independiente que la envía desde la página /asesores.
+ * - Con orgId: la desarrolladora pide dar de alta a un asesor de su equipo.
+ * La revisa siempre el administrador general, que asigna el acceso al aprobar.
+ */
 export interface AdvisorApplication {
   id: string;
+  orgId?: string;
+  /** Usuario de la desarrolladora que pidió el alta. */
+  requestedBy?: string;
+  title?: string;
   name: string;
   email: string;
   phone: string;
@@ -241,6 +250,7 @@ export interface AdvisorApplication {
   status: ApplicationStatus;
   reviewedBy?: string;
   reviewNote?: string;
+  reviewedAt?: string;
   userId?: string;
   createdAt: string;
 }

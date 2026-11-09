@@ -5,7 +5,7 @@ import { Copy } from "@phosphor-icons/react";
 import type { AdvisorApplication, AsesorTipo, ApplicationStatus } from "@/lib/types";
 import { approveApplication, rejectApplication, roleLabel, updateUser, useDB, useSessionUser } from "@/lib/db";
 import { relTime, SITE } from "@/lib/format";
-import { Avatar, Badge, Button, Dialog, Empty, Field, Select, Textarea, cx } from "@/components/ui";
+import { Avatar, Badge, Button, Dialog, Empty, Field, Input, Select, Textarea, cx } from "@/components/ui";
 import { Guard, PageHead } from "@/components/panel/Shell";
 
 const TABS: { id: ApplicationStatus | "activos"; label: string }[] = [
@@ -20,7 +20,9 @@ export default function Asesores() {
   const me = useSessionUser();
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("pendiente");
   const [open, setOpen] = useState<AdvisorApplication | null>(null);
-  const [tipo, setTipo] = useState<AsesorTipo>("externo");
+  const [tipo, setTipo] = useState<AsesorTipo | "">("");
+  const [access, setAccess] = useState("");
+  const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [done, setDone] = useState<{ email: string; password: string; name: string } | null>(null);
   if (!me) return null;
@@ -28,14 +30,17 @@ export default function Asesores() {
   const advisors = db.users.filter((u) => u.role === "asesor");
 
   async function approve() {
-    const r = await approveApplication(me!, open!.id, tipo);
+    if (!open!.orgId && !tipo) return toast.error("Elige el tipo de acceso.");
+    setBusy(true);
+    const r = await approveApplication(me!, open!.id, (tipo || "externo") as AsesorTipo, access);
+    setBusy(false);
     if (!r.ok) return toast.error(r.error);
     setDone({ email: r.user.email, password: r.password, name: r.user.name });
   }
 
   return (
     <Guard roles={["superadmin"]}>
-      <PageHead title="Asesores" sub="Nadie se da de alta solo: los asesores envían su solicitud desde /asesores y tú decides quién entra y con qué tipo de acceso." />
+      <PageHead title="Asesores" sub="Aquí llegan dos tipos de solicitud: asesores independientes que la mandan desde /asesores, y desarrolladoras que piden dar de alta a asesores de su equipo. Para aprobar se asigna un acceso; sin acceso nadie entra." />
       <div className="mb-5 flex flex-wrap gap-2" role="tablist">
         {TABS.map((t) => {
           const n = t.id === "activos" ? advisors.length : db.applications.filter((a) => a.status === t.id).length;
@@ -51,18 +56,18 @@ export default function Asesores() {
         advisors.length === 0 ? <Empty title="Aún no hay asesores" /> : (
           <div className="overflow-x-auto rounded-[14px] border border-line bg-card">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="border-b border-line text-ink-3"><tr>{["Asesor", "Tipo", "Empresa", "Prospectos", "Alta", "Estado", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead>
+              <thead className="border-b border-line text-ink-3"><tr>{["Asesor", "Pertenece a", "Tipo", "Prospectos", "Alta", "Estado", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead>
               <tbody>
                 {advisors.map((u) => (
                   <tr key={u.id} className="border-b border-line last:border-0">
                     <td className="px-4 py-3"><div className="flex items-center gap-3"><Avatar name={u.name} /><div><p className="font-semibold">{u.name}</p><p className="text-ink-3">{u.email} · {u.mobile || u.phone}</p></div></div></td>
+                    <td className="px-4 py-3 text-ink-2">{u.orgId ? db.orgs.find((o) => o.id === u.orgId)?.name : "Independiente"}</td>
                     <td className="px-4 py-3">
-                      <Select aria-label={`Tipo de ${u.name}`} value={u.asesorTipo ?? "externo"} onChange={(e) => { updateUser(me, u.id, { asesorTipo: e.target.value as AsesorTipo }); toast(`${u.name} ahora es asesor ${e.target.value}`); }} className="h-9 w-auto">
+                      {u.orgId ? <Badge>De la desarrolladora</Badge> : <Select aria-label={`Tipo de ${u.name}`} value={u.asesorTipo ?? "externo"} onChange={(e) => { updateUser(me, u.id, { asesorTipo: e.target.value as AsesorTipo }); toast(`${u.name} ahora es asesor ${e.target.value}`); }} className="h-9 w-auto">
                         <option value="interno">Interno</option>
-                        <option value="externo">Externo</option>
-                      </Select>
+                        <option value="externo">Independiente</option>
+                      </Select>}
                     </td>
-                    <td className="px-4 py-3 text-ink-2">{u.company ?? "-"}</td>
                     <td className="px-4 py-3 tabular">{db.leads.filter((l) => l.asesorId === u.id).length}</td>
                     <td className="px-4 py-3 text-ink-3">{relTime(u.createdAt)}</td>
                     <td className="px-4 py-3">{u.active ? <Badge tone="ok">Activo</Badge> : <Badge tone="bad">Desactivado</Badge>}</td>
@@ -85,13 +90,17 @@ export default function Asesores() {
                 <div className="grid gap-1 text-sm">
                   <p className="font-semibold">{a.name} <span className="font-normal text-ink-3">· {relTime(a.createdAt)}</span></p>
                   <p className="text-ink-2">{a.email} · {a.phone}</p>
-                  <p className="text-ink-2">{a.company || "Independiente"} · {a.experience}{a.zone ? ` · ${a.zone}` : ""}</p>
+                  {a.orgId ? (
+                    <p><Badge tone="brick">Equipo de {db.orgs.find((o) => o.id === a.orgId)?.name ?? "una desarrolladora"}</Badge> <span className="text-ink-3">Pedido por {db.users.find((u) => u.id === a.requestedBy)?.name ?? "la desarrolladora"} · {a.title}</span></p>
+                  ) : (
+                    <p className="text-ink-2"><Badge>Independiente</Badge> {[a.company, a.experience, a.zone].filter(Boolean).join(" · ")}</p>
+                  )}
                   {a.message && <p className="text-ink-2">“{a.message}”</p>}
                   {a.reviewNote && <p className="text-bad">Motivo: {a.reviewNote}</p>}
-                  {a.status === "aprobada" && <p className="text-ok">Aprobada como {roleLabel({ role: "asesor", asesorTipo: db.users.find((u) => u.id === a.userId)?.asesorTipo }).toLowerCase()}</p>}
+                  {a.status === "aprobada" && (() => { const u = db.users.find((x) => x.id === a.userId); return <p className="text-ok">Aprobada{u ? ` como ${roleLabel(u).toLowerCase()}, acceso ${u.email}` : ""}</p>; })()}
                 </div>
               </div>
-              {a.status === "pendiente" && <Button onClick={() => { setOpen(a); setTipo("externo"); setNote(""); setDone(null); }}>Revisar</Button>}
+              {a.status === "pendiente" && <Button onClick={() => { setOpen(a); setTipo(""); setAccess(a.email); setNote(""); setDone(null); }}>Revisar</Button>}
             </div>
           ))}
         </div>
@@ -110,13 +119,20 @@ export default function Asesores() {
           </div>
         ) : open && (
           <div className="grid gap-4">
-            <Field label="Aprobar como" htmlFor="ap-t" hint={tipo === "interno" ? "Equipo de la plataforma: recibe prospectos por turnos." : "Consulta inventario, cotiza, descarga material y toma la academia."}>
-              <Select id="ap-t" value={tipo} onChange={(e) => setTipo(e.target.value as AsesorTipo)}>
-                <option value="externo">Asesor externo</option>
-                <option value="interno">Asesor interno</option>
-              </Select>
+            {open.orgId && <p className="rounded-[12px] bg-sunk p-3 text-sm">Entrará como asesor de <strong>{db.orgs.find((o) => o.id === open.orgId)?.name}</strong> y aparecerá en su equipo en la página.</p>}
+            <Field label="Correo de acceso" htmlFor="ap-e" hint="Será su usuario para entrar. Se genera una contraseña temporal que cambia al primer acceso.">
+              <Input id="ap-e" type="email" required value={access} onChange={(e) => setAccess(e.target.value)} />
             </Field>
-            <Button onClick={approve}>Aprobar y crear acceso</Button>
+            {!open.orgId && (
+              <Field label="Tipo de acceso" htmlFor="ap-t" hint={tipo === "interno" ? "Equipo de la plataforma: recibe prospectos por turnos." : tipo === "externo" ? "Consulta inventario, cotiza, descarga material y toma la academia." : "Obligatorio para aprobar."}>
+                <Select id="ap-t" required value={tipo} onChange={(e) => setTipo(e.target.value as AsesorTipo)}>
+                  <option value="">Elige el tipo de acceso</option>
+                  <option value="externo">Asesor independiente</option>
+                  <option value="interno">Asesor interno de Umbral</option>
+                </Select>
+              </Field>
+            )}
+            <Button onClick={approve} disabled={busy || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(access.trim()) || (!open.orgId && !tipo)}>Asignar acceso y aprobar</Button>
             <div className="grid gap-2 border-t border-line pt-4">
               <Field label="Motivo del rechazo (uso interno)" htmlFor="ap-n"><Textarea id="ap-n" rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
               <Button variant="outline" onClick={() => { rejectApplication(me, open.id, note.trim()); setOpen(null); toast("Solicitud rechazada"); }}>Rechazar</Button>

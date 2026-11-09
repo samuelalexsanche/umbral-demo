@@ -20,7 +20,7 @@ export default function Equipo() {
   const roles: Role[] = ["asesor", "desarrolladora", "superadmin"];
 
   function start() {
-    setF({ name: "", email: "", phone: "", title: "", role: "asesor", orgId: db.orgs[0]?.id ?? "", asesorTipo: "interno", company: "" });
+    setF({ name: "", email: "", phone: "", title: "", role: "asesor", orgId: "", asesorTipo: "externo", company: "" });
     setErr({});
     setDone(null);
     setOpen(true);
@@ -33,7 +33,8 @@ export default function Equipo() {
     if (f.phone.replace(/\D/g, "").length < 10) er.phone = "Escribe un teléfono de 10 dígitos.";
     setErr(er);
     if (Object.keys(er).length) return;
-    const r = await createUser(me!, f);
+    if (f.role === "desarrolladora" && !f.orgId) return setErr({ name: "Elige la desarrolladora." });
+    const r = await createUser(me!, { ...f, orgId: f.role === "desarrolladora" || (f.role === "asesor" && f.asesorTipo === "externo") ? f.orgId : undefined });
     if (!r.ok) return setErr({ email: r.error });
     setDone({ user: r.user, password: r.password });
   }
@@ -80,11 +81,16 @@ export default function Equipo() {
         ) : (
           <form onSubmit={submit} noValidate className="grid gap-4">
             <Field label="Rol" htmlFor="u-r" hint={f.role === "asesor" ? "Entra al portal de asesores. No da de alta ni modifica inventario." : f.role === "desarrolladora" ? "Administra el perfil, los desarrollos, el inventario y el material de su desarrolladora." : "Control total de la plataforma."}>
-              <Select id="u-r" value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })}>{roles.map((r) => <option key={r} value={r}>{roleLabel({ role: r, asesorTipo: undefined }).replace("Asesor externo", "Asesor")}</option>)}</Select>
+              <Select id="u-r" value={f.role} onChange={(e) => { const role = e.target.value as Role; setF({ ...f, role, orgId: role === "desarrolladora" ? db.orgs[0]?.id ?? "" : "" }); }}>{roles.map((r) => <option key={r} value={r}>{r === "asesor" ? "Asesor" : roleLabel({ role: r })}</option>)}</Select>
             </Field>
             {f.role === "asesor" && (
               <Field label="Tipo de asesor" htmlFor="u-t2" hint={f.asesorTipo === "interno" ? "Equipo de la plataforma: recibe prospectos." : "Asesor externo aprobado: consulta inventario, cotiza y descarga material."}>
-                <Select id="u-t2" value={f.asesorTipo} onChange={(e) => setF({ ...f, asesorTipo: e.target.value as AsesorTipo })}><option value="interno">Interno</option><option value="externo">Externo</option></Select>
+                <Select id="u-t2" value={f.asesorTipo} onChange={(e) => setF({ ...f, asesorTipo: e.target.value as AsesorTipo })}><option value="interno">Interno de Umbral</option><option value="externo">De desarrolladora o independiente</option></Select>
+              </Field>
+            )}
+            {f.role === "asesor" && f.asesorTipo === "externo" && (
+              <Field label="Pertenece a" htmlFor="u-o2" hint={f.orgId ? "Queda como miembro de esa desarrolladora y aparece en su equipo." : "Asesor independiente, sin desarrolladora."}>
+                <Select id="u-o2" value={f.orgId} onChange={(e) => setF({ ...f, orgId: e.target.value })}><option value="">Independiente</option>{db.orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</Select>
               </Field>
             )}
             {f.role === "desarrolladora" && (

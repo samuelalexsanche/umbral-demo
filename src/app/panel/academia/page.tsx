@@ -16,7 +16,7 @@ export default function Academia() {
   if (!me) return null;
   const list = db.courses.filter((c) => c.published && (!kind || c.kind === kind));
   return (
-    <Guard roles={["asesor", "superadmin"]} allow={can.usePortal}>
+    <Guard roles={["asesor", "desarrolladora", "superadmin"]} allow={can.usePortal}>
       <PageHead title="Academia" sub="Cursos de bienes raíces, capacitación de cada proyecto y eventos para asesores." />
       <div className="mb-6 flex flex-wrap gap-2">
         {(["", "curso", "capacitacion", "evento"] as const).map((k) => (

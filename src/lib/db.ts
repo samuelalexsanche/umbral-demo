@@ -2,7 +2,7 @@
 // Capa de datos de la plataforma. Las pantallas solo usan estas funciones.
 // - Modo local (sin variables de Supabase): todo vive en localStorage, para desarrollar sin backend.
 // - Modo Supabase: se hidrata con lo que el usuario puede ver (RLS) y cada cambio sube solo la diferencia.
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { SEED, seedDB } from "./seed";
 import { REMOTE } from "./backend";
 import { adminUsers, loadAll, pushDiff, rpc, sb } from "./supabase";
@@ -252,8 +252,8 @@ export const ROLE_LABEL: Record<Role, string> = {
   asesor: "Asesor",
 };
 
-export const roleLabel = (u: Pick<User, "role" | "asesorTipo">) =>
-  u.role === "asesor" ? (u.asesorTipo === "interno" ? "Asesor interno" : "Asesor externo") : ROLE_LABEL[u.role];
+export const roleLabel = (u: Pick<User, "role" | "asesorTipo"> & { orgId?: string }) =>
+  u.role === "asesor" ? (u.orgId ? "Asesor de desarrolladora" : u.asesorTipo === "interno" ? "Asesor interno" : "Asesor independiente") : ROLE_LABEL[u.role];
 
 const ownsOrg = (u: User, orgId?: string) => u.role === "superadmin" || (u.role === "desarrolladora" && !!orgId && u.orgId === orgId);
 
@@ -262,6 +262,8 @@ export const can = {
   manageOrgs: (u: User) => u.role === "superadmin",
   manageCatalogs: (u: User) => u.role === "superadmin",
   manageAdvisors: (u: User) => u.role === "superadmin",
+  /** Solo una desarrolladora pide altas para su equipo; un asesor no puede. */
+  requestTeam: (u: User) => u.role === "desarrolladora" && !!u.orgId,
   manageContent: (u: User) => u.role === "superadmin",
   editOrgProfile: (u: User, orgId: string) => ownsOrg(u, orgId),
   manageDevelopments: (u: User, orgId: string) => ownsOrg(u, orgId),
@@ -272,7 +274,7 @@ export const can = {
     u.role === "superadmin" || (u.role === "desarrolladora" && !!l.orgId && u.orgId === l.orgId) || (u.role === "asesor" && u.asesorTipo === "interno" && l.asesorId === u.id),
   reassignLead: (u: User) => u.role === "superadmin",
   manageAgent: (u: User, orgId: string) => ownsOrg(u, orgId),
-  usePortal: (u: User) => u.role === "asesor" || u.role === "superadmin",
+  usePortal: (u: User) => u.role === "asesor" || u.role === "desarrolladora" || u.role === "superadmin",
   receiveLeads: (u: User) => u.role === "superadmin" || u.role === "desarrolladora" || (u.role === "asesor" && u.asesorTipo === "interno"),
 };
 
@@ -290,6 +292,29 @@ export function visibleUsers(db: DB, u: User) {
   if (u.role === "superadmin") return db.users;
   if (u.role === "desarrolladora") return db.users.filter((x) => x.orgId === u.orgId);
   return db.users.filter((x) => x.id === u.id);
+}
+
+/* ─── Equipo público de una desarrolladora ───────────────────── */
+export type TeamMember = { id: string; name: string; title: string; photo?: string };
+
+/** Asesores activos que pertenecen a la desarrolladora. En Supabase sale de org_team(), que solo expone nombre, puesto y foto. */
+export function useOrgTeam(orgId?: string): TeamMember[] {
+  const db = useDB();
+  const [remote, setRemote] = useState<TeamMember[]>([]);
+  useEffect(() => {
+    if (!REMOTE || !orgId) return;
+    let alive = true;
+    rpc<TeamMember[]>("org_team", { org: orgId }).then((r) => alive && setRemote(Array.isArray(r) ? r : [])).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [orgId, db]);
+  if (!orgId) return [];
+  if (REMOTE) return remote;
+  return db.users
+    .filter((u) => u.role === "asesor" && u.orgId === orgId && u.active)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((u) => ({ id: u.id, name: u.name, title: u.title, photo: u.photo }));
 }
 
 /* ─── Bitácora ───────────────────────────────────────────────── */
@@ -320,6 +345,7 @@ export async function createUser(actor: User, data: NewUser): Promise<Created> {
   if (actor.role !== "superadmin") return { ok: false, error: "Solo el administrador general da de alta usuarios." };
   if (db.users.some((x) => x.email.toLowerCase() === data.email.trim().toLowerCase())) return { ok: false, error: "Ya existe un usuario con ese correo." };
   if (data.role === "desarrolladora" && !data.orgId) return { ok: false, error: "Elige la desarrolladora a la que pertenece." };
+  if (data.orgId && !db.orgs.some((o) => o.id === data.orgId)) return { ok: false, error: "La desarrolladora no existe." };
   const password = tempPassword();
   const user: User = {
     id: uid("u"),
@@ -327,7 +353,7 @@ export async function createUser(actor: User, data: NewUser): Promise<Created> {
     email: data.email.trim().toLowerCase(),
     password,
     role: data.role,
-    orgId: data.role === "desarrolladora" ? data.orgId : undefined,
+    orgId: data.role === "superadmin" ? undefined : data.orgId || undefined,
     asesorTipo: data.role === "asesor" ? (data.asesorTipo ?? "externo") : undefined,
     company: data.company?.trim() || undefined,
     phone: data.phone.trim(),
@@ -581,20 +607,52 @@ export async function submitApplication(a: Omit<AdvisorApplication, "id" | "stat
   return { ok: true };
 }
 
-export async function approveApplication(actor: User, id: string, tipo: AsesorTipo): Promise<Created> {
+/** La desarrolladora pide al administrador dar de alta a un asesor de su equipo. */
+export async function requestTeamMember(actor: User, a: { name: string; email: string; phone: string; title: string; message: string }): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!can.requestTeam(actor)) return { ok: false, error: "Solo una desarrolladora puede pedir altas para su equipo." };
+  const db = load();
+  const email = a.email.trim().toLowerCase();
+  if (db.users.some((x) => x.email === email)) return { ok: false, error: "Ese correo ya tiene acceso a la plataforma." };
+  if (db.applications.some((x) => x.email === email && x.status === "pendiente")) return { ok: false, error: "Ya hay una solicitud pendiente con ese correo." };
+  const org = db.orgs.find((o) => o.id === actor.orgId);
+  const ap: AdvisorApplication = {
+    id: uid("ap"), orgId: actor.orgId, requestedBy: actor.id, name: a.name.trim(), email, phone: a.phone.trim(), title: a.title.trim() || "Asesor inmobiliario",
+    company: org?.name ?? "", experience: "", zone: "", message: a.message.trim(), status: "pendiente", createdAt: now(),
+  };
   if (REMOTE) {
-    const r = await adminUsers<Created>({ action: "approve", applicationId: id, tipo });
+    const { error } = await sb().from("applications").insert({ id: ap.id, data: ap });
+    if (error) return { ok: false, error: "No se pudo enviar la solicitud." };
+    await refresh();
+    return { ok: true };
+  }
+  mutate((d) => {
+    d.applications.unshift(ap);
+    log(d, actor, `pidió dar de alta a ${ap.name} en su equipo`, actor.orgId);
+  });
+  return { ok: true };
+}
+
+/**
+ * Aprobar = asignar el acceso. Sin correo de acceso válido no se aprueba.
+ * Si la solicitud viene de una desarrolladora, el asesor queda como miembro de ella.
+ */
+export async function approveApplication(actor: User, id: string, tipo: AsesorTipo, accessEmail: string): Promise<Created> {
+  const email = accessEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "Asigna un correo de acceso válido." };
+  if (REMOTE) {
+    const r = await adminUsers<Created>({ action: "approve", applicationId: id, tipo, email });
     if (r.ok) await refresh();
     return r;
   }
   const ap = load().applications.find((x) => x.id === id);
-  if (!ap || actor.role !== "superadmin") return { ok: false as const, error: "No se encontró la solicitud." };
-  const r = await createUser(actor, { name: ap.name, email: ap.email, phone: ap.phone, title: "Asesor inmobiliario", role: "asesor", asesorTipo: tipo, company: ap.company });
+  if (!ap || ap.status !== "pendiente" || actor.role !== "superadmin") return { ok: false as const, error: "La solicitud ya no está pendiente." };
+  const r = await createUser(actor, { name: ap.name, email, phone: ap.phone, title: ap.title || "Asesor inmobiliario", role: "asesor", asesorTipo: ap.orgId ? "externo" : tipo, orgId: ap.orgId, company: ap.company });
   if (!r.ok) return r;
   mutate((d) => {
     const x = d.applications.find((y) => y.id === id);
-    if (x) Object.assign(x, { status: "aprobada", reviewedBy: actor.id, userId: r.user.id });
-    log(d, actor, `aprobó la solicitud de ${ap.name} como asesor ${tipo}`);
+    if (x) Object.assign(x, { status: "aprobada", reviewedBy: actor.id, reviewedAt: now(), userId: r.user.id });
+    const org = d.orgs.find((o) => o.id === ap.orgId);
+    log(d, actor, org ? `aprobó a ${ap.name} como asesor de ${org.name}` : `aprobó la solicitud de ${ap.name} como asesor ${tipo === "interno" ? "interno" : "independiente"}`, ap.orgId);
   });
   return r;
 }
@@ -604,8 +662,8 @@ export function rejectApplication(actor: User, id: string, note: string) {
   mutate((d) => {
     const x = d.applications.find((y) => y.id === id);
     if (!x) return;
-    Object.assign(x, { status: "rechazada", reviewedBy: actor.id, reviewNote: note });
-    log(d, actor, `rechazó la solicitud de ${x.name}`);
+    Object.assign(x, { status: "rechazada", reviewedBy: actor.id, reviewedAt: now(), reviewNote: note });
+    log(d, actor, `rechazó la solicitud de ${x.name}`, x.orgId);
   });
 }
 

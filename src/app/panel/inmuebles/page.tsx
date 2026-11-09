@@ -9,6 +9,7 @@ import { asset, priceLabel, relTime } from "@/lib/format";
 import type { Listing } from "@/lib/types";
 import { Badge, Button, Dialog, Empty, Input, Select } from "@/components/ui";
 import { PageHead, STATUS } from "@/components/panel/Shell";
+import { available, unitsOf } from "@/lib/queries";
 
 export default function Inmuebles() {
   const db = useDB();
@@ -18,6 +19,7 @@ export default function Inmuebles() {
   const [del, setDel] = useState<Listing | null>(null);
   if (!me) return null;
   const all = visibleListings(db, me);
+  const onSite = available(db).filter((l) => all.some((x) => x.id === l.id));
   const list = all.filter((l) => (!st || l.status === st) && (!q || l.title.toLowerCase().includes(q.toLowerCase())));
 
   function duplicate(l: Listing) {
@@ -31,7 +33,7 @@ export default function Inmuebles() {
     <div>
       <PageHead
         title="Inmuebles"
-        sub={`${all.length} inmuebles en total. Precios, disponibilidad y condiciones que cambies aquí se ven al momento en el sitio y en el portal de asesores.`}
+        sub={`${all.length} fichas en total; ${onSite.length} se ven en la página con ${onSite.reduce((n, l) => n + unitsOf(l), 0)} unidades disponibles (las demás están en borrador, pausadas, vendidas o sin precio). Precios, disponibilidad y condiciones que cambies aquí se ven al momento en el sitio y en el portal de asesores.`}
         actions={<Button href="/panel/inmuebles/editar/">Publicar inmueble</Button>}
       />
       <div className="mb-4 flex flex-wrap gap-2">

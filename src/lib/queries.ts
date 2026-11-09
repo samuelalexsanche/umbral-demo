@@ -22,3 +22,24 @@ export const devOf = (db: DB, id?: string) => (id ? db.developments.find((d) => 
 export const userOf = (db: DB, id?: string) => (id ? db.users.find((u) => u.id === id) : undefined);
 
 export const MUNICIPIOS = ["Guadalajara", "Zapopan", "San Pedro Tlaquepaque", "Tlajomulco de Zúñiga", "Tonalá", "El Salto"];
+
+/** Unidades disponibles de una ficha: si trae inventario real, se cuentan sus unidades; si no, el dato capturado. */
+export const unitsOf = (l: Listing) => (l.units?.length ? l.units.filter((u) => u.status === "disponible").length : l.unitsAvailable ?? 1);
+
+/**
+ * Números de una desarrolladora. Los usan la página pública y el panel, para que siempre coincidan:
+ * - inmuebles: fichas publicadas con precio (las que se ven en el sitio).
+ * - unidades: departamentos disponibles dentro de esas fichas.
+ * - desarrollosEnVenta: desarrollos con al menos una ficha publicada.
+ */
+export function orgStats(db: DB, orgId: string) {
+  const listings = available(db).filter((l) => l.orgId === orgId);
+  const devIds = new Set(listings.map((l) => l.developmentId).filter(Boolean));
+  return {
+    listings,
+    inmuebles: listings.length,
+    unidades: listings.reduce((s, l) => s + unitsOf(l), 0),
+    desarrollos: db.developments.filter((d) => d.orgId === orgId).length,
+    desarrollosEnVenta: db.developments.filter((d) => d.orgId === orgId && devIds.has(d.id)).length,
+  };
+}

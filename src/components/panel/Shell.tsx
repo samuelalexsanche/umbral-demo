@@ -23,9 +23,9 @@ export function usePanelNav() {
   const db = useDB();
   const items: Item[] = [
     { href: "/panel/", label: "Resumen", icon: House, show: (u) => !isAsesor(u) },
-    { href: "/panel/portal/", label: "Inventario", icon: Buildings, show: (u) => isAsesor(u), group: "Portal de asesores" },
-    { href: "/panel/descargas/", label: "Descargas", icon: DownloadSimple, show: (u) => isAsesor(u), group: "Portal de asesores" },
-    { href: "/panel/academia/", label: "Academia", icon: GraduationCap, show: (u) => isAsesor(u), group: "Portal de asesores" },
+    { href: "/panel/portal/", label: "Inventario", icon: Buildings, show: () => true, group: "Portal de asesores" },
+    { href: "/panel/descargas/", label: "Descargas", icon: DownloadSimple, show: () => true, group: "Portal de asesores" },
+    { href: "/panel/academia/", label: "Academia", icon: GraduationCap, show: () => true, group: "Portal de asesores" },
     {
       href: "/panel/prospectos/", label: "Prospectos", icon: ChatsCircle, show: (u) => can.receiveLeads(u),
       count: (u) => visibleLeads(db, u).filter((l) => l.status === "nuevo").length,
@@ -35,6 +35,7 @@ export function usePanelNav() {
     { href: "/panel/inmuebles/", label: "Inmuebles", icon: HouseLine, show: (u) => isAdmin(u) || isDev(u), group: "Inventario" },
     { href: "/panel/materiales/", label: "Material descargable", icon: DownloadSimple, show: (u) => isAdmin(u) || isDev(u), group: "Inventario" },
     { href: "/panel/perfil/", label: "Perfil de la desarrolladora", icon: IdentificationCard, show: isDev, group: "Inventario" },
+    { href: "/panel/mi-equipo/", label: "Mi equipo", icon: UsersThree, show: isDev, group: "Inventario", count: (u) => db.applications.filter((a) => a.orgId === u.orgId && a.status === "pendiente").length },
     { href: "/panel/publicaciones/", label: "Noticias y avances", icon: Newspaper, show: (u) => isAdmin(u) || isDev(u), group: "Contenido" },
     { href: "/panel/academia-admin/", label: "Academia", icon: GraduationCap, show: isAdmin, group: "Contenido" },
     { href: "/panel/tasas/", label: "Tasas bancarias", icon: Bank, show: isAdmin, group: "Contenido" },

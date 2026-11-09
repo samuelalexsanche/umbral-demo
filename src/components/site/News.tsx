@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, CurrencyDollar } from "@phosphor-icons/react";
 import type { Article, ArticleCategory } from "@/lib/types";
 import { useDB, useHydrated } from "@/lib/db";
@@ -46,42 +46,77 @@ export function ArticleCard({ a }: { a: Article }) {
   );
 }
 
-/** Tipo de cambio del día. Fuente gratuita sin llave (exchangerate-api, actualiza cada 24 h). */
+type Fx = { usd: number; eur: number; cad: number; at: number };
+
+/** Cotización al momento (Coinbase, sin llave, se actualiza cada minuto). Si falla, usa la referencia diaria de open.er-api. */
+async function fetchFx(): Promise<Fx> {
+  try {
+    const r = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=USD", { cache: "no-store" });
+    const j = await r.json();
+    const mxn = Number(j.data.rates.MXN), eur = Number(j.data.rates.EUR), cad = Number(j.data.rates.CAD);
+    if (!(mxn > 0 && eur > 0 && cad > 0)) throw new Error();
+    return { usd: mxn, eur: mxn / eur, cad: mxn / cad, at: Date.now() };
+  } catch {
+    const j = await (await fetch("https://open.er-api.com/v6/latest/MXN")).json();
+    if (j.result !== "success") throw new Error();
+    return { usd: 1 / j.rates.USD, eur: 1 / j.rates.EUR, cad: 1 / j.rates.CAD, at: Date.parse(j.time_last_update_utc) };
+  }
+}
+
+/** Tipo de cambio en tiempo real: se actualiza solo cada 30 segundos y marca si subió o bajó. */
 export function FxTicker({ className }: { className?: string }) {
-  const [fx, setFx] = useState<{ usd: number; eur: number; cad: number; at: string } | null>(null);
+  const [fx, setFx] = useState<Fx | null>(null);
+  const [prev, setPrev] = useState<Fx | null>(null);
   const [failed, setFailed] = useState(false);
+  const last = useRef<Fx | null>(null);
   useEffect(() => {
     let alive = true;
-    fetch("https://open.er-api.com/v6/latest/MXN")
-      .then((r) => r.json())
-      .then((j) => {
-        if (!alive || j.result !== "success") throw new Error();
-        setFx({ usd: 1 / j.rates.USD, eur: 1 / j.rates.EUR, cad: 1 / j.rates.CAD, at: j.time_last_update_utc });
-      })
-      .catch(() => alive && setFailed(true));
+    const tick = () =>
+      fetchFx()
+        .then((v) => {
+          if (!alive) return;
+          setPrev(last.current);
+          last.current = v;
+          setFx(v);
+          setFailed(false);
+        })
+        .catch(() => alive && setFailed(true));
+    void tick();
+    const t = setInterval(tick, 30_000);
     return () => {
       alive = false;
+      clearInterval(t);
     };
   }, []);
   const n = (v: number) => v.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const rows: [string, keyof Omit<Fx, "at">][] = [["Dólar", "usd"], ["Euro", "eur"], ["Dólar canadiense", "cad"]];
   return (
     <section className={cx("grid gap-3 rounded-[18px] border border-line bg-card p-5", className)} aria-label="Tipo de cambio">
-      <p className="flex items-center gap-2 font-semibold"><CurrencyDollar size={19} /> Tipo de cambio</p>
-      {failed ? (
+      <p className="flex items-center gap-2 font-semibold">
+        <CurrencyDollar size={19} /> Tipo de cambio
+        {fx && <span className="ml-auto flex items-center gap-1.5 text-xs font-medium text-ok"><span className="size-2 animate-pulse rounded-full bg-ok" /> En vivo</span>}
+      </p>
+      {failed && !fx ? (
         <p className="text-sm text-ink-3">No se pudo cargar el tipo de cambio en este momento.</p>
       ) : !fx ? (
         <div className="h-20 animate-pulse rounded-[10px] bg-sunk" />
       ) : (
         <>
           <dl className="grid grid-cols-3 gap-3 lg:grid-cols-1">
-            {[["Dólar", fx.usd], ["Euro", fx.eur], ["Dólar canadiense", fx.cad]].map(([k, v]) => (
-              <div key={k as string}>
-                <dt className="text-xs text-ink-3">{k}</dt>
-                <dd className="font-display text-xl font-semibold tabular">${n(v as number)}</dd>
-              </div>
-            ))}
+            {rows.map(([k, key]) => {
+              const d = prev ? fx[key] - prev[key] : 0;
+              return (
+                <div key={key}>
+                  <dt className="text-xs text-ink-3">{k}</dt>
+                  <dd className="flex items-baseline gap-2 font-display text-xl font-semibold tabular">
+                    ${n(fx[key])}
+                    {Math.abs(d) >= 0.00005 && <span className={cx("text-xs font-semibold", d > 0 ? "text-bad" : "text-ok")}>{d > 0 ? "▲" : "▼"} {Math.abs(d).toFixed(4)}</span>}
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
-          <p className="text-xs text-ink-3">Pesos por unidad. Referencia de mercado actualizada el {new Date(fx.at).toLocaleDateString("es-MX", { day: "numeric", month: "long" })}; los bancos aplican su propio tipo de cambio.</p>
+          <p className="text-xs text-ink-3" aria-live="polite">Pesos por unidad. Actualizado a las {new Date(fx.at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}; se refresca solo cada 30 segundos. Los bancos aplican su propio tipo de cambio.</p>
         </>
       )}
     </section>

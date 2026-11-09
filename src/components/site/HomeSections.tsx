@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { ArrowRight, SealCheck } from "@phosphor-icons/react";
 import { useDB } from "@/lib/db";
-import { available, devHref, isSeededListing, orgHref, orgOf } from "@/lib/queries";
+import { available, devHref, isSeededListing, orgHref, orgOf, orgStats } from "@/lib/queries";
 import { asset, deliveryLabel, moneyShort } from "@/lib/format";
 import { OrgLogo } from "../ui";
 import ListingCard from "./ListingCard";
@@ -55,7 +55,7 @@ export function OrgsRow() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {db.orgs.filter((o) => o.status === "activa").map((o) => {
-        const n = available(db).filter((l) => l.orgId === o.id).length;
+        const st = orgStats(db, o.id);
         return (
           <Link key={o.id} href={orgHref(o)} className="press flex items-center gap-3 rounded-[14px] border border-line bg-card p-4 hover:border-ink-3">
             <OrgLogo org={o} size={46} />
@@ -63,7 +63,7 @@ export function OrgsRow() {
               <p className="flex items-center gap-1.5 truncate font-semibold">
                 {o.name} {o.verified && <SealCheck size={16} weight="fill" className="shrink-0 text-ok" aria-label="Verificada" />}
               </p>
-              <p className="text-sm text-ink-2">{db.developments.filter((d) => d.orgId === o.id).length} desarrollos · {n} inmuebles{o.seal ? " · Sello verde" : ""}</p>
+              <p className="text-sm text-ink-2">{st.desarrollosEnVenta} desarrollos en venta · {st.inmuebles} inmuebles{o.seal ? " · Sello verde" : ""}</p>
             </div>
             <ArrowRight size={18} className="ml-auto shrink-0 text-ink-3" />
           </Link>

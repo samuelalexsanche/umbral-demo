@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
   const { data: me } = await service.from("profiles").select("role, active").eq("id", who.user.id).single();
   if (!me || me.role !== "superadmin" || !me.active) return json({ ok: false, error: "Solo el administrador general da de alta usuarios." }, 403);
 
-  let body: { action: string; user?: NewUser; applicationId?: string; tipo?: "interno" | "externo" };
+  let body: { action: string; user?: NewUser; applicationId?: string; tipo?: "interno" | "externo"; email?: string };
   try {
     body = await req.json();
   } catch {
@@ -40,6 +40,10 @@ Deno.serve(async (req) => {
     const email = u.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false as const, error: "Correo inválido." };
     if (u.role === "desarrolladora" && !u.orgId) return { ok: false as const, error: "Elige la desarrolladora." };
+    if (u.orgId) {
+      const { data: org } = await service.from("orgs").select("id").eq("id", u.orgId).maybeSingle();
+      if (!org) return { ok: false as const, error: "La desarrolladora no existe." };
+    }
     const password = tempPassword();
     const { data, error } = await service.auth.admin.createUser({ email, password, email_confirm: true });
     if (error || !data.user) return { ok: false as const, error: error?.message.includes("already") ? "Ya existe un usuario con ese correo." : error?.message ?? "No se pudo crear el usuario." };
@@ -48,7 +52,7 @@ Deno.serve(async (req) => {
       name: u.name.trim(),
       email,
       role: u.role,
-      ...(u.role === "desarrolladora" ? { orgId: u.orgId } : {}),
+      ...(u.role !== "superadmin" && u.orgId ? { orgId: u.orgId } : {}),
       ...(u.role === "asesor" ? { asesorTipo: u.asesorTipo ?? "externo" } : {}),
       ...(u.company ? { company: u.company } : {}),
       phone: u.phone ?? "",
@@ -72,9 +76,13 @@ Deno.serve(async (req) => {
   if (body.action === "approve" && body.applicationId) {
     const { data: ap } = await service.from("applications").select("data").eq("id", body.applicationId).single();
     if (!ap || ap.data.status !== "pendiente") return json({ ok: false, error: "La solicitud ya no está pendiente." });
-    const r = await create({ name: ap.data.name, email: ap.data.email, phone: ap.data.phone, title: "Asesor inmobiliario", role: "asesor", asesorTipo: body.tipo ?? "externo", company: ap.data.company || undefined });
+    // Aprobar = asignar acceso: sin correo de acceso no se aprueba.
+    const email = (body.email ?? "").trim().toLowerCase();
+    if (!email) return json({ ok: false, error: "Asigna un correo de acceso." });
+    const orgId: string | undefined = ap.data.orgId || undefined;
+    const r = await create({ name: ap.data.name, email, phone: ap.data.phone, title: ap.data.title || "Asesor inmobiliario", role: "asesor", asesorTipo: orgId ? "externo" : (body.tipo ?? "externo"), orgId, company: ap.data.company || undefined });
     if (!r.ok) return json(r);
-    await service.from("applications").update({ data: { ...ap.data, status: "aprobada", reviewedBy: who.user.id, userId: r.user.id } }).eq("id", body.applicationId);
+    await service.from("applications").update({ data: { ...ap.data, status: "aprobada", reviewedBy: who.user.id, reviewedAt: new Date().toISOString(), userId: r.user.id } }).eq("id", body.applicationId);
     return json(r);
   }
 

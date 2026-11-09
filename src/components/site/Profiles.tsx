@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SealCheck, Clock, MapPin, Phone, EnvelopeSimple, CalendarBlank, Buildings, ArrowRight, Leaf, CheckCircle, Circle, Rocket } from "@phosphor-icons/react";
 import type { Article, Org } from "@/lib/types";
-import { useDB, useHydrated } from "@/lib/db";
-import { available, devHref, isSeededListing, orgHref, orgOf, published } from "@/lib/queries";
+import { useDB, useHydrated, useOrgTeam } from "@/lib/db";
+import { available, devHref, isSeededListing, orgHref, orgOf, orgStats, published } from "@/lib/queries";
 import { asset, creditName, deliveryLabel, moneyShort, priceLabel } from "@/lib/format";
 import { Badge, Button, Empty, OrgLogo, cx } from "../ui";
 import { ArticleCard } from "./News";
@@ -22,11 +22,13 @@ export function OrgProfile({ id }: { id: string }) {
   const [maxP, setMaxP] = useState(0);
   const [sort, setSort] = useState("precio-asc");
   const [contact, setContact] = useState(false);
+  const team = useOrgTeam(id);
   const ready = useHydrated();
   if (!ready) return <div className="mx-auto h-[60dvh] max-w-[1400px] animate-pulse px-4 py-8"><div className="h-full rounded-[18px] bg-sunk" /></div>;
   if (!org || org.status !== "activa") return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este perfil no está disponible" action={<Button href="/desarrolladoras/">Ver desarrolladoras</Button>} /></div>;
 
-  const listings = published(db).filter((l) => l.orgId === org.id);
+  const stats = orgStats(db, org.id);
+  const listings = stats.listings;
   const isStudio = (l: (typeof listings)[number]) => /^Estudio/.test(l.title);
   const shown = listings
     .filter((l) => (!devF || l.developmentId === devF) && (beds < 0 || (beds === 0 ? isStudio(l) : !isStudio(l) && l.bedrooms === beds)) && (!deliv || l.delivery === deliv) && (!maxP || l.price <= maxP))
@@ -57,10 +59,11 @@ export function OrgProfile({ id }: { id: string }) {
             </div>
             <p className="max-w-[60ch] text-lg text-ink-2 text-pretty">{org.tagline}</p>
           </div>
-          <dl className="grid grid-cols-3 gap-6 text-sm">
+          <dl className="grid grid-cols-2 gap-6 text-sm sm:grid-cols-4">
             <div><dt className="text-ink-3">Años</dt><dd className="font-display text-3xl font-semibold tabular">{new Date().getFullYear() - org.since}</dd></div>
             <div><dt className="text-ink-3">Proyectos realizados</dt><dd className="font-display text-3xl font-semibold tabular">{org.projectsDone ?? devs.length}</dd></div>
-            <div><dt className="text-ink-3">En venta</dt><dd className="font-display text-3xl font-semibold tabular">{devs.length}</dd></div>
+            <div><dt className="text-ink-3">Desarrollos en venta</dt><dd className="font-display text-3xl font-semibold tabular">{stats.desarrollosEnVenta}</dd></div>
+            <div><dt className="text-ink-3">Unidades disponibles</dt><dd className="font-display text-3xl font-semibold tabular">{stats.unidades}</dd></div>
           </dl>
         </div>
       </section>
@@ -154,6 +157,20 @@ export function OrgProfile({ id }: { id: string }) {
               <li className="flex gap-2.5"><CalendarBlank size={18} className="shrink-0 text-ink-3" /> Desarrolla desde {org.since}</li>
             </ul>
           </div>
+          {team.length > 0 && (
+            <div className="grid gap-3 rounded-[18px] border border-line bg-card p-6">
+              <p className="font-semibold">Equipo de asesores <span className="tabular text-ink-3">{team.length}</span></p>
+              <ul className="grid gap-3">
+                {team.map((m) => (
+                  <li key={m.id} className="flex items-center gap-3 text-sm">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sunk font-semibold text-ink-2">{m.name.split(" ").slice(0, 2).map((w) => w[0]).join("")}</span>
+                    <span><span className="block font-semibold">{m.name}</span><span className="text-ink-3">{m.title || "Asesor inmobiliario"}</span></span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-ink-3">Asesores dados de alta por {org.name} y aprobados por Umbral.</p>
+            </div>
+          )}
           <TrustCard org={org} />
           <div className="grid gap-3 rounded-[18px] border border-line bg-card p-6">
             <p className="font-semibold">Formas de pago</p>
@@ -288,8 +305,7 @@ export function OrgDirectory() {
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       {db.orgs.filter((o) => o.status === "activa").map((o) => {
-        const ls = available(db).filter((l) => l.orgId === o.id);
-        const devs = db.developments.filter((d) => d.orgId === o.id);
+        const st = orgStats(db, o.id);
         return (
           <Link key={o.id} href={orgHref(o)} className="lift grid gap-4 rounded-[18px] border border-line bg-card p-6">
             <div className="flex items-center gap-4">
@@ -301,8 +317,9 @@ export function OrgDirectory() {
             </div>
             <p className="text-ink-2 text-pretty">{o.tagline}</p>
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              <span><strong className="tabular">{devs.length}</strong> desarrollos en venta</span>
-              <span><strong className="tabular">{ls.length}</strong> inmuebles</span>
+              <span><strong className="tabular">{st.desarrollosEnVenta}</strong> desarrollos en venta</span>
+              <span><strong className="tabular">{st.inmuebles}</strong> inmuebles</span>
+              <span><strong className="tabular">{st.unidades}</strong> unidades disponibles</span>
               {o.trust.length > 0 && <span>Confianza <strong className="tabular">{o.trust.filter((t) => t.ok).length}/{o.trust.length}</strong></span>}
             </div>
             <div className="flex flex-wrap gap-1.5">{o.credits.map((c) => <span key={c} className="rounded-full border border-line px-2 py-0.5 text-xs text-ink-2">{creditName(c)}</span>)}</div>

@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, Eye, HouseLine, ChatsCircle, ClipboardText, Sparkle } from "@phosphor-icons/react";
+import { ArrowRight, Buildings, Eye, HouseLine, ChatsCircle, ClipboardText, Sparkle } from "@phosphor-icons/react";
 import { importSeed, roleLabel, useDB, useSessionUser, visibleLeads, visibleListings } from "@/lib/db";
 import { REMOTE } from "@/lib/backend";
 import { toast } from "sonner";
-import { listingHref } from "@/lib/queries";
+import { available, listingHref, orgStats, unitsOf } from "@/lib/queries";
 import { creditName, relTime } from "@/lib/format";
 import { Badge, Button, Empty } from "@/components/ui";
 import { PageHead, STATUS } from "@/components/panel/Shell";
@@ -29,8 +29,13 @@ export default function Resumen() {
   const maxW = Math.max(1, ...weeks.map((w) => w.n));
 
   const pendingAdvisors = db.applications.filter((a) => a.status === "pendiente").length;
+  // Mismos números que la página pública (orgStats), para que panel y sitio coincidan.
+  const site = me.orgId && me.role === "desarrolladora" ? orgStats(db, me.orgId) : null;
+  const siteListings = site ? site.inmuebles : available(db).length;
+  const siteUnits = site ? site.unidades : available(db).reduce((s, l) => s + unitsOf(l), 0);
   const kpis = [
-    { i: HouseLine, label: "Inmuebles publicados", v: pub.length },
+    { i: HouseLine, label: "Inmuebles en la página", v: siteListings },
+    { i: Buildings, label: "Unidades disponibles", v: siteUnits },
     { i: ChatsCircle, label: "Prospectos nuevos", v: newLeads.length },
     me.role === "superadmin"
       ? { i: ClipboardText, label: "Asesores por aprobar", v: pendingAdvisors }
@@ -51,7 +56,7 @@ export default function Resumen() {
           <Button onClick={async () => { const r = await importSeed(me); if (r.ok) toast.success("Datos iniciales cargados"); else toast.error(r.error ?? "No se pudo cargar"); }}>Cargar datos iniciales</Button>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
         {kpis.map(({ i: Icon, label, v }) => (
           <div key={label} className="grid gap-2 rounded-[14px] border border-line bg-card p-5">
             <Icon size={22} className="text-ink-3" />
