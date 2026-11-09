@@ -76,5 +76,5 @@ export function OrgsRow() {
 export function LatestNews() {
   const db = useDB();
   const list = db.articles.filter((a) => a.published).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
-  return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{list.map((a) => <ArticleCard key={a.id} a={a} />)}</div>;
+  return <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{list.map((a) => <ArticleCard key={a.id} a={a} />)}</div>;
 }

@@ -246,6 +246,47 @@ const articles: Article[] = [
     body: "Punta Patria ofrece departamentos de tres recámaras en preventa sobre Av. Patria 750, Colonia 5 de Mayo. Incluye alberca, gimnasio, ludoteca y coworking. Enganche desde 10%.",
     image: "/img/casillas/pub/punta-patria-preventa.webp", published: true, date: "2026-10-10T10:00:00Z", createdBy: "u-casillas",
   },
+  {
+    id: "ar-4", slug: "banxico-recorta-tasa-6-25", category: "financieras",
+    title: "Banxico recorta su tasa de referencia a 6.25%",
+    summary: "Es el nivel más bajo desde marzo de 2022. La Junta prevé mantenerla así por un periodo prolongado.",
+    body: "La Junta de Gobierno del Banco de México bajó la tasa de interés interbancaria a un día en 25 puntos base, de 6.50% a 6.25%, con efectos desde el 6 de noviembre de 2026. La decisión fue por mayoría: tres votos a favor y dos por mantenerla.\n\nEl recorte sorprendió a parte del mercado, que esperaba una pausa. Banxico indicó que mantener la tasa en este nivel durante un periodo prolongado favorecería la baja de la inflación.\n\nPara quien compra vivienda, una tasa de referencia más baja suele trasladarse con el tiempo a créditos hipotecarios más accesibles, aunque cada banco fija su propia tasa.",
+    source: "Banco de México", sourceUrl: "https://www.banxico.org.mx/publicaciones-y-prensa/anuncios-de-las-decisiones-de-politica-monetaria/%7B43236252-D06E-5231-27E8-058810A86A52%7D.pdf",
+    published: true, date: "2026-11-05T19:00:00Z", createdBy: "u-admin",
+  },
+  {
+    id: "ar-5", slug: "zmg-95-mil-millones-vivienda", category: "mercado",
+    title: "El mercado inmobiliario de Guadalajara mueve más de 95 mil millones de pesos al año",
+    summary: "La zona metropolitana registra alrededor de 45 mil operaciones de vivienda anuales.",
+    body: "La Zona Metropolitana de Guadalajara mueve más de 95 mil millones de pesos al año en el sector inmobiliario y registra cerca de 45 mil operaciones de vivienda anuales.\n\nEl crecimiento se concentra en proyectos verticales y de usos mixtos en zonas céntricas, donde se combinan departamentos, oficinas y comercio.",
+    source: "Publimetro Jalisco", sourceUrl: "https://www.publimetro.com.mx/jalisco/2026/10/29/mercado-inmobiliario-en-jalisco-impulsan-inversiones-en-vivienda-oficinas-y-comercios/",
+    published: true, date: "2026-10-29T12:00:00Z", createdBy: "u-admin",
+  },
+  {
+    id: "ar-6", slug: "hipotecas-eeuu-7-49", category: "global",
+    title: "La hipoteca a 30 años en Estados Unidos sube a 7.49%",
+    summary: "Es su nivel más alto desde noviembre de 2023 y las solicitudes de crédito cayeron 4.2% en una semana.",
+    body: "Según la Asociación de Banqueros Hipotecarios (MBA), la tasa media fija a 30 años en Estados Unidos llegó a 7.49%, la más alta desde noviembre de 2023. Las solicitudes de hipoteca bajaron 4.2% en la semana al 2 de octubre y las de refinanciamiento cayeron 8%.\n\nLa Reserva Federal subió sus tasas en septiembre, por primera vez en tres años, a un rango de 3.75% a 4%. Para compradores que pagan en dólares, la diferencia con el crédito en México vuelve a ser relevante al comparar opciones.",
+    source: "EFE, con datos de la MBA", sourceUrl: "https://eldinero.com.do/383989/las-tasas-hipotecarias-en-estados-unidos-suben-a-su-nivel-mas-alto-en-casi-tres-anos/",
+    published: true, date: "2026-10-07T15:00:00Z", createdBy: "u-admin",
+  },
+  {
+    id: "ar-7", slug: "bravante-usos-mixtos-avenida-mexico", category: "proyectos",
+    title: "Bravante: usos mixtos sobre Avenida México",
+    summary: "75 departamentos tipo loft, de 1 y 2 recámaras, de 4 a 5.6 millones de pesos, con oficinas y comercio en el mismo edificio.",
+    body: "La desarrolladora KIVA presentó Bravante, sobre Avenida México en Guadalajara. Tiene 5 niveles de vivienda con 75 departamentos tipo loft y de 1 y 2 recámaras, de 4 a cerca de 5.6 millones de pesos, además de 6 niveles corporativos y 2 comerciales.\n\nSuma 8,956 m² rentables: 6,872 de oficinas y 2,084 de comercio. Según la desarrolladora, la mayoría de los espacios ya están vendidos o rentados.",
+    source: "Publimetro Jalisco", sourceUrl: "https://www.publimetro.com.mx/jalisco/2026/10/29/mercado-inmobiliario-en-jalisco-impulsan-inversiones-en-vivienda-oficinas-y-comercios/",
+    published: true, date: "2026-10-29T13:00:00Z", createdBy: "u-admin",
+  },
+  {
+    id: "ar-8", slug: "vero-delgadillo-vivienda-para-vivir-bien", category: "entrevista",
+    title: "Vero Delgadillo: una ciudad pensada para las personas",
+    summary: "La presidenta municipal de Guadalajara habló de vivienda adecuada y del repoblamiento del Centro Histórico en Hábitat LATAM 2026.",
+    author: "Vero Delgadillo, presidenta municipal de Guadalajara",
+    body: "En la inauguración de Hábitat LATAM Guadalajara 2026, la presidenta municipal Vero Delgadillo planteó una ciudad centrada en las personas: recuperación de espacios públicos, acceso a vivienda adecuada y un sistema de cuidados.\n\nMencionó la estrategia Vivienda para Vivir Bien, con vivienda económica y media y el repoblamiento del Centro Histórico, y el Apoyo de Renta para Jóvenes de 3 mil pesos mensuales para personas de 18 a 30 años que estudian o trabajan en Guadalajara.",
+    source: "La Crónica de Hoy Jalisco", sourceUrl: "https://www.cronica.com.mx/jalisco/2026/08/26/vero-delgadillo-defiende-una-ciudad-accesible-y-activa-pensada-para-las-personas/",
+    published: true, date: "2026-08-26T12:00:00Z", createdBy: "u-admin",
+  },
 ];
 
 const materials: Material[] = [
@@ -280,7 +321,7 @@ const courses: Course[] = [
 
 export function seedDB(): DB {
   return {
-    version: 14,
+    version: 15,
     orgs: structuredClone(orgs),
     developments: structuredClone(developments),
     listings: structuredClone(listings),

@@ -5,6 +5,7 @@ import { Developments, Featured, OrgsRow } from "@/components/site/HomeSections"
 import JsonLd from "@/components/JsonLd";
 import { CREDITS, SEED } from "@/lib/seed";
 import { LatestNews } from "@/components/site/HomeSections";
+import { FxTicker } from "@/components/site/News";
 import { SITE, asset } from "@/lib/format";
 
 const FAQ = [
@@ -109,10 +110,13 @@ export default function Home() {
 
       <section className="mx-auto mt-24 max-w-[1400px] px-4 sm:px-6">
         <div className="mb-6 flex items-end justify-between gap-4">
-          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Noticias y avances</h2>
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Noticias, avances y divisas</h2>
           <Link href="/noticias/" className="inline-flex items-center gap-1.5 font-semibold text-ink-2 hover:text-ink">Ver noticias <ArrowRight size={16} /></Link>
         </div>
-        <LatestNews />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <LatestNews />
+          <FxTicker className="order-first content-start self-start lg:order-none" />
+        </div>
       </section>
 
       <section className="mx-auto mt-24 max-w-[1400px] px-4 sm:px-6">

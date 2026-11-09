@@ -73,7 +73,7 @@ export function FxTicker({ className }: { className?: string }) {
         <div className="h-20 animate-pulse rounded-[10px] bg-sunk" />
       ) : (
         <>
-          <dl className="grid grid-cols-3 gap-3">
+          <dl className="grid grid-cols-3 gap-3 lg:grid-cols-1">
             {[["Dólar", fx.usd], ["Euro", fx.eur], ["Dólar canadiense", fx.cad]].map(([k, v]) => (
               <div key={k as string}>
                 <dt className="text-xs text-ink-3">{k}</dt>
