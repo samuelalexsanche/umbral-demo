@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 446 446" role="img" aria-label="Grupo Casillas" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-1616.65,-224.772)">
+        <g transform="matrix(8.33333,0,0,8.33333,0,0)">
+            <g transform="matrix(1,0,0,1,220.74,26.9726)">
+                <path d="M0,25.022L12.157,12.865L12.157,0L4.863,0L4.863,9.846L0.001,14.708L-4.861,9.846L-4.861,0L-12.155,0L-12.154,12.868L0,25.022Z" style="fill:rgb(255,164,2);fill-rule:nonzero;" />
+            </g>
+        </g>
+        <g transform="matrix(8.33333,0,0,8.33333,0,0)">
+            <g transform="matrix(1,0,0,1,220.742,80.4574)">
+                <path d="M0,-25.023L-12.157,-12.866L-12.157,0L-4.863,0L-4.863,-9.847L-0.001,-14.709L4.861,-9.847L4.861,0L12.155,0L12.154,-12.869L0,-25.023Z" style="fill:rgb(255,164,2);fill-rule:nonzero;" />
+            </g>
+        </g>
+        <g transform="matrix(8.33333,0,0,8.33333,0,0)">
+            <g transform="matrix(1,0,0,1,206.864,65.8698)">
+                <path d="M0,-24.311L-12.866,-24.311L-12.866,-17.017L-3.019,-17.017L1.843,-12.155L-3.019,-7.293L-12.866,-7.293L-12.866,0L0.003,-0.001L12.157,-12.154L0,-24.311Z" style="fill:rgb(255,164,2);fill-rule:nonzero;" />
+            </g>
+        </g>
+        <g transform="matrix(8.33333,0,0,8.33333,0,0)">
+            <g transform="matrix(1,0,0,1,247.483,58.5764)">
+                <path d="M0,-9.724L0,-17.018L-12.869,-17.016L-25.022,-4.863L-12.866,7.294L0,7.294L0,-0L-9.847,-0L-14.709,-4.862L-9.847,-9.724L0,-9.724Z" style="fill:rgb(255,164,2);fill-rule:nonzero;" />
+            </g>
+        </g>
+    </g>
+</svg>

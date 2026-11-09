@@ -35,8 +35,12 @@ export function OrgProfile({ id }: { id: string }) {
         <div className="mx-auto grid max-w-[1400px] gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="grid gap-4">
             <div className="flex items-center gap-4">
-              <OrgLogo org={org} size={72} className="rounded-[16px]" />
+              {!org.logoWide && <OrgLogo org={org} size={72} className="rounded-[16px]" />}
               <div>
+                {org.logoWide && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={asset(org.logoWide)} alt={`Logotipo de ${org.name}`} className="mb-4 h-14 w-auto sm:h-16" />
+                )}
                 <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-3">Desarrolladora {org.seal && <SealBadge />}</p>
                 <h1 className="flex items-center gap-2 font-display text-3xl font-semibold tracking-tight sm:text-5xl">
                   {org.name}

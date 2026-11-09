@@ -53,7 +53,10 @@ export interface Org {
   status: "activa" | "suspendida";
   initials: string;
   color: string;
+  /** Símbolo cuadrado (avatar). */
   logo?: string;
+  /** Logotipo horizontal completo. */
+  logoWide?: string;
   cover?: string;
   tagline: string;
   description: string;

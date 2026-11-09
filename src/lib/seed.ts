@@ -34,6 +34,7 @@ const orgs: Org[] = [
   {
     id: "org-casillas", slug: "grupo-casillas", name: "Grupo Casillas",
     verified: true, status: "activa", initials: "GC", color: "#1F2A44",
+    logo: "/img/casillas/logo-grupo-casillas-simbolo.svg", logoWide: "/img/casillas/logo-grupo-casillas.svg",
     tagline: "Desarrollos verticales en las zonas que más crecen de Guadalajara y Zapopan.",
     description: "Desarrolladora tapatía con proyectos de departamentos en la Colonia Moderna, Zona Country, Colonia 5 de Mayo y Ciudad Granja. Construye edificios de escala media con amenidades, cerca de transporte y de los corredores de servicios de la ciudad.",
     history: "Grupo Casillas lleva 23 años desarrollando proyectos en Jalisco y suma 34 proyectos realizados. Su portafolio actual se concentra en vivienda vertical en zonas consolidadas: Alcalde Mil y Argentina 824 en la Colonia Moderna, Ávila & León en la Zona Country, Punta Patria sobre Av. Patria y Cedros 1180 en Ciudad Granja, Zapopan.",
@@ -279,7 +280,7 @@ const courses: Course[] = [
 
 export function seedDB(): DB {
   return {
-    version: 12,
+    version: 13,
     orgs: structuredClone(orgs),
     developments: structuredClone(developments),
     listings: structuredClone(listings),

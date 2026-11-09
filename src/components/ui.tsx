@@ -1,4 +1,5 @@
 "use client";
+import { asset } from "@/lib/format";
 import Link from "next/link";
 import { forwardRef, useEffect, useRef, type ReactNode, type ComponentProps } from "react";
 import { X } from "@phosphor-icons/react";
@@ -69,7 +70,14 @@ export const Textarea = forwardRef<HTMLTextAreaElement, ComponentProps<"textarea
   return <textarea ref={ref} className={cx(fieldCls, "w-full py-2.5 leading-relaxed", className)} {...p} />;
 });
 
-export function OrgLogo({ org, size: s = 44, className }: { org: Pick<Org, "initials" | "color" | "name">; size?: number; className?: string }) {
+export function OrgLogo({ org, size: s = 44, className }: { org: Pick<Org, "initials" | "color" | "name" | "logo">; size?: number; className?: string }) {
+  if (org.logo)
+    return (
+      <span aria-hidden className={cx("inline-grid shrink-0 place-items-center rounded-[10px] border border-line bg-white", className)} style={{ width: s, height: s, padding: s * 0.16 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={asset(org.logo)} alt="" className="h-full w-full object-contain" />
+      </span>
+    );
   return (
     <span
       aria-hidden
