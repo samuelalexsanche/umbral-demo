@@ -33,7 +33,7 @@ export default function Page() {
     <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
       <form onSubmit={submit} className="grid content-start gap-5 rounded-[18px] border border-line bg-card p-6 sm:p-8">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">Acceso</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Acceso de socios</h1>
           <p className="mt-2 text-ink-2">Para desarrolladoras y asesores aprobados. Si eres asesor y aún no tienes cuenta, <Link href="/asesores/" className="font-semibold text-brick hover:underline">solicita tu acceso</Link>.</p>
         </div>
         <Field label="Correo" htmlFor="l-e"><Input id="l-e" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>

@@ -63,11 +63,7 @@ export function SiteHeader() {
             {mounted && favs.length > 0 && <span className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-brick px-1 text-[10px] font-bold leading-4 text-white">{favs.length}</span>}
           </Link>
           <span className="hidden sm:block">
-            {mounted && me ? (
-              <Button href="/panel/" variant="dark" size="sm"><UserCircle size={18} /> Mi panel</Button>
-            ) : (
-              <Button href="/acceso/" variant="outline" size="sm">Acceso</Button>
-            )}
+            {mounted && me && <Button href="/panel/" variant="dark" size="sm"><UserCircle size={18} /> Mi panel</Button>}
           </span>
           <button className="press grid size-10 place-items-center rounded-full hover:bg-sunk lg:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={open ? "Cerrar menú" : "Abrir menú"}>
             {open ? <X size={22} /> : <List size={22} />}
@@ -79,7 +75,7 @@ export function SiteHeader() {
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className="block border-b border-line py-3.5 font-display text-xl font-semibold">{n.label}</Link>
           ))}
-          <Link href={me ? "/panel/" : "/acceso/"} className="block py-3.5 font-display text-xl font-semibold text-brick">{me ? "Mi panel" : "Acceso"}</Link>
+          {me && <Link href="/panel/" className="block py-3.5 font-display text-xl font-semibold text-brick">Mi panel</Link>}
         </nav>
       )}
     </header>
@@ -111,7 +107,6 @@ export function SiteFooter() {
           <p className="font-semibold text-paper/50">Profesionales</p>
           <Link href="/publica-tus-desarrollos/" className="text-paper/85 hover:text-paper">Para desarrolladores</Link>
           <Link href="/asesores/" className="text-paper/85 hover:text-paper">Solicitud de asesores</Link>
-          <Link href="/acceso/" className="text-paper/85 hover:text-paper">Acceso</Link>
           <Link href="/guardados/" className="text-paper/85 hover:text-paper">Guardados y comparador</Link>
         </div>
       </div>
