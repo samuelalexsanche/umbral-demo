@@ -224,9 +224,38 @@ export async function login(email: string, password: string): Promise<LoginResul
 }
 
 /** Solo modo local: entrar con una cuenta de prueba sin contraseña. */
-export function loginAs(userId: string) {
-  if (REMOTE) return;
+export function loginAs(userId: string): User | null {
+  if (REMOTE) return null;
+  // Si en este navegador la cuenta de prueba quedó desactivada, borrada o con su desarrolladora suspendida
+  // por pruebas anteriores, se restaura desde los datos iniciales para que el rol siempre abra su panel.
+  const seedUser = SEED.users.find((x) => x.id === userId);
+  let db = load();
+  const broken = (d: DB) => {
+    const u = d.users.find((x) => x.id === userId);
+    const org = u?.orgId ? d.orgs.find((o) => o.id === u.orgId) : undefined;
+    return !u || !u.active || (!!u.orgId && (!org || org.status !== "activa"));
+  };
+  if (broken(db) && seedUser) {
+    mutate((d) => {
+      const i = d.users.findIndex((x) => x.id === userId);
+      const fresh = structuredClone(seedUser);
+      if (i >= 0) d.users[i] = { ...d.users[i], ...fresh };
+      else d.users.push(fresh);
+      const seedOrg = SEED.orgs.find((o) => o.id === seedUser.orgId);
+      if (seedOrg) {
+        const j = d.orgs.findIndex((o) => o.id === seedOrg.id);
+        if (j >= 0) d.orgs[j].status = "activa";
+        else d.orgs.push(structuredClone(seedOrg));
+      }
+    });
+    db = load();
+  }
+  if (broken(db)) {
+    save(seedDB());
+    db = load();
+  }
   setSession(userId);
+  return db.users.find((x) => x.id === userId) ?? null;
 }
 
 export async function logout() {

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShieldCheck, Buildings, UserCircle, UserPlus } from "@phosphor-icons/react";
 import { REMOTE } from "@/lib/backend";
+import { SEED } from "@/lib/seed";
 import { login, loginAs, roleLabel, useDB } from "@/lib/db";
 import { Button, Field, Input, OrgLogo } from "@/components/ui";
 
@@ -44,11 +45,11 @@ export default function Page() {
       {!REMOTE && <div className="grid content-start gap-4">
         <h2 className="font-display text-2xl font-semibold tracking-tight">Entrar con un rol de prueba</h2>
         {QUICK.map(({ id, icon: Icon, what }) => {
-          const u = db.users.find((x) => x.id === id);
+          const u = db.users.find((x) => x.id === id) ?? SEED.users.find((x) => x.id === id);
           if (!u) return null;
-          const org = db.orgs.find((o) => o.id === u.orgId);
+          const org = db.orgs.find((o) => o.id === u.orgId) ?? SEED.orgs.find((o) => o.id === u.orgId);
           return (
-            <button key={id} aria-label={`Entrar como ${roleLabel(u)}: ${u.name}`} onClick={() => { loginAs(id); router.push(u.role === "asesor" ? "/panel/portal/" : "/panel/"); }} className="press lift grid grid-cols-[auto_1fr] items-start gap-4 rounded-[16px] border border-line bg-card p-5 text-left">
+            <button key={id} aria-label={`Entrar como ${roleLabel(u)}: ${u.name}`} onClick={() => { const v = loginAs(id); router.push(v?.role === "asesor" ? "/panel/portal/" : "/panel/"); }} className="press lift grid grid-cols-[auto_1fr] items-start gap-4 rounded-[16px] border border-line bg-card p-5 text-left">
               {org ? <OrgLogo org={org} size={44} /> : <span className="grid size-11 place-items-center rounded-[10px] bg-ink text-paper"><Icon size={22} /></span>}
               <span className="grid gap-1">
                 <span className="font-semibold">{roleLabel(u)}</span>
