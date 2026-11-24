@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import type { CreditId } from "@/lib/types";
 import { useDB } from "@/lib/db";
-import { available, MUNICIPIOS } from "@/lib/queries";
+import { available, ZONAS } from "@/lib/queries";
 import { moneyShort } from "@/lib/format";
 import { Select, cx } from "../ui";
 import MapView from "./MapView";
@@ -35,6 +35,8 @@ export default function HeroSearch() {
   const ids = new Set(match.map((l) => l.id));
   const points = all.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, label: "", off: !ids.has(l.id) }));
   const from = match.length ? Math.min(...match.map((l) => l.price)) : 0;
+  // Igual que la búsqueda: se cuentan proyectos, no tipologías.
+  const projects = new Set(match.map((l) => l.developmentId ?? l.id)).size;
 
   function go() {
     const p = new URLSearchParams();
@@ -48,15 +50,15 @@ export default function HeroSearch() {
     <section className="mx-auto grid max-w-[1400px] gap-8 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pt-14">
       <div className="grid content-center gap-7">
         <h1 className="font-display text-[clamp(2.5rem,5.4vw,4.6rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-balance">
-          Departamentos nuevos en Guadalajara, de desarrolladoras verificadas.
+          Departamentos nuevos en Guadalajara y Puerto Vallarta. Preventas y entregas inmediatas.
         </h1>
         <p className="max-w-[46ch] text-lg text-ink-2 text-pretty">
-          Elige cómo vas a pagar y tu presupuesto, y ve solo lo que te alcanza. Cada inmueble lo publica su desarrolladora y lo atiende un asesor aprobado.
+          Elige tu forma de pago, enganche, plazo, crédito directo con el desarrollador o crédito hipotecario, y ve las mejores opciones para ti.
         </p>
 
         <div className="grid gap-4 rounded-[18px] border border-line bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
           <fieldset>
-            <legend className="mb-2.5 text-sm font-semibold text-ink-2">¿Cómo vas a pagar?</legend>
+            <legend className="mb-2.5 text-sm font-semibold text-ink-2">¿Cuál es tu plan?</legend>
             <div className="flex flex-wrap gap-2" role="radiogroup">
               {CHOICES.map((c) => (
                 <button
@@ -79,10 +81,10 @@ export default function HeroSearch() {
           </fieldset>
           <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <label className="grid gap-1.5 text-sm font-semibold text-ink-2">
-              Municipio
+              Ciudad
               <Select value={muni} onChange={(e) => setMuni(e.target.value)}>
-                <option value="">Toda la zona metropolitana</option>
-                {MUNICIPIOS.map((m) => <option key={m}>{m}</option>)}
+                <option value="">Todas las ciudades</option>
+                {ZONAS.map((z) => <optgroup key={z.group} label={z.group}>{z.items.map((m) => <option key={m}>{m}</option>)}</optgroup>)}
               </Select>
             </label>
             <label className="grid gap-1.5 text-sm font-semibold text-ink-2">
@@ -99,18 +101,18 @@ export default function HeroSearch() {
             <span className="relative inline-flex h-[1.15em] overflow-hidden font-display text-4xl font-semibold tracking-tight tabular">
               <AnimatePresence mode="popLayout" initial={false}>
                 <motion.span
-                  key={match.length}
+                  key={projects}
                   initial={reduce ? { opacity: 0 } : { y: "-100%", opacity: 0, filter: "blur(4px)" }}
                   animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
                   exit={reduce ? { opacity: 0 } : { y: "100%", opacity: 0, filter: "blur(4px)" }}
                   transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1] }}
                 >
-                  {match.length}
+                  {projects}
                 </motion.span>
               </AnimatePresence>
             </span>
             <span className="text-ink-2">
-              {match.length === 1 ? "inmueble disponible" : "inmuebles disponibles"}
+              {projects === 1 ? "proyecto disponible" : "proyectos disponibles"}
               {match.length > 0 && <> desde <strong className="text-ink tabular">{moneyShort(from)}</strong></>}
             </span>
           </div>
@@ -123,7 +125,7 @@ export default function HeroSearch() {
           <span className="rounded-full bg-card/95 px-3 py-1.5 font-semibold shadow-sm backdrop-blur">
             <span className="mr-1.5 inline-block size-2.5 rounded-full bg-brick align-middle" /> Te alcanza
           </span>
-          <span className="rounded-full bg-card/95 px-3 py-1.5 text-ink-2 shadow-sm backdrop-blur">Área metropolitana de Guadalajara</span>
+          <span className="rounded-full bg-card/95 px-3 py-1.5 text-ink-2 shadow-sm backdrop-blur">{muni || "Guadalajara"}</span>
         </div>
       </div>
     </section>

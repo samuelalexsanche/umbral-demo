@@ -18,6 +18,8 @@ export default function ApplicationForm() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email)) er.email = "Escribe un correo válido; será tu usuario.";
     if (f.phone.replace(/\D/g, "").length < 10) er.phone = "Escribe un teléfono de 10 dígitos.";
     if (!f.experience) er.experience = "Elige tu experiencia.";
+    if (f.company.trim().length < 2) er.company = "Escribe tu inmobiliaria, empresa o bróker; si trabajas por tu cuenta, escribe Independiente.";
+    if (f.zone.trim().length < 3) er.zone = "Escribe la ciudad donde trabajas.";
     setErr(er);
     if (Object.keys(er).length) return;
     setBusy(true);
@@ -45,7 +47,7 @@ export default function ApplicationForm() {
         <Field label="Celular" htmlFor="a-p" error={err.phone}><Input id="a-p" type="tel" autoComplete="tel" value={f.phone} onChange={set("phone")} aria-invalid={!!err.phone} /></Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Inmobiliaria o empresa (opcional)" htmlFor="a-c"><Input id="a-c" value={f.company} onChange={set("company")} placeholder="Independiente" /></Field>
+        <Field label="Inmobiliaria, empresa o bróker" htmlFor="a-c" error={err.company}><Input id="a-c" value={f.company} onChange={set("company")} aria-invalid={!!err.company} /></Field>
         <Field label="Experiencia en bienes raíces" htmlFor="a-x" error={err.experience}>
           <Select id="a-x" value={f.experience} onChange={set("experience")} aria-invalid={!!err.experience}>
             <option value="">Elige</option>
@@ -56,8 +58,8 @@ export default function ApplicationForm() {
           </Select>
         </Field>
       </div>
-      <Field label="Zonas donde trabajas (opcional)" htmlFor="a-z"><Input id="a-z" value={f.zone} onChange={set("zone")} placeholder="Zapopan, Providencia, Country" /></Field>
-      <Field label="Cuéntanos de ti (opcional)" htmlFor="a-m"><Textarea id="a-m" rows={3} value={f.message} onChange={set("message")} placeholder="Certificaciones, desarrollos que has vendido, cómo consigues clientes." /></Field>
+      <Field label="Ciudad" htmlFor="a-z" error={err.zone}><Input id="a-z" autoComplete="address-level2" value={f.zone} onChange={set("zone")} aria-invalid={!!err.zone} /></Field>
+      <Field label="Cuéntanos de ti" htmlFor="a-m"><Textarea id="a-m" rows={3} value={f.message} onChange={set("message")} /></Field>
       <Button type="submit" size="lg" disabled={busy}>{busy ? "Enviando…" : "Enviar solicitud"}</Button>
       <p className="text-center text-xs text-ink-3">El acceso lo otorga únicamente el administrador general de Umbral.</p>
     </form>

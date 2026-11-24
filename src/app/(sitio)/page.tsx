@@ -6,7 +6,8 @@ import JsonLd from "@/components/JsonLd";
 import { CREDITS, SEED } from "@/lib/seed";
 import { LatestNews } from "@/components/site/HomeSections";
 import { FxTicker } from "@/components/site/News";
-import { SITE, asset } from "@/lib/format";
+import CityPair from "@/components/site/CityPair";
+import { SITE } from "@/lib/format";
 
 const FAQ = [
   {
@@ -54,7 +55,7 @@ export default function Home() {
       <section className="mx-auto mt-20 max-w-[1400px] px-4 sm:px-6">
         <div className="mb-6 flex items-end justify-between gap-4">
           <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Destacados de la semana</h2>
-          <Link href="/inmuebles/" className="inline-flex items-center gap-1.5 font-semibold text-ink-2 hover:text-ink">Ver los {pub.length} inmuebles <ArrowRight size={16} /></Link>
+          <Link href="/inmuebles/" className="inline-flex items-center gap-1.5 font-semibold text-ink-2 hover:text-ink">Ver los {new Set(pub.map((l) => l.developmentId ?? l.id)).size} proyectos <ArrowRight size={16} /></Link>
         </div>
         <Featured />
       </section>
@@ -143,14 +144,14 @@ export default function Home() {
         <div className="grid items-center gap-8 overflow-hidden rounded-[22px] bg-ink p-8 text-paper sm:p-12 lg:grid-cols-[1.2fr_1fr]">
           <div className="grid gap-4">
             <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">¿Eres desarrollador o asesor?</h2>
-            <p className="max-w-[48ch] text-paper/75">Las desarrolladoras solicitan colocar su inventario, sujeto a condiciones. Los asesores solicitan acceso al portal: inventario en tiempo real, cotizaciones con sus datos, material de venta y academia.</p>
+            <p className="font-semibold text-brick-soft">Colabora con Umbral Inmobiliario</p>
+            <p className="max-w-[52ch] text-paper/75">Súmate a nuestra red de aliados. Como desarrollador encontrarás un aliado comercial para promover y vender tus proyectos; como asesor, una amplia cartera de inventario, material de venta, academia y la oportunidad de colaborar con las mejores desarrolladoras del país.</p>
             <div className="flex flex-wrap gap-3">
               <Link href="/publica-tus-desarrollos/" className="press inline-flex h-12 items-center gap-2 rounded-full bg-brick px-6 font-semibold text-white hover:bg-brick-d">Para desarrolladores <ArrowRight size={18} /></Link>
               <Link href="/asesores/" className="press inline-flex h-12 items-center gap-2 rounded-full border border-paper/30 px-6 font-semibold text-paper hover:border-paper">Soy asesor</Link>
             </div>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/img/casillas/pub/brokers-4.webp")} alt="Asesores revisando un desarrollo de Grupo Casillas" loading="lazy" className="aspect-square w-full rounded-[14px] object-cover" />
+          <CityPair className="aspect-[4/3] lg:aspect-square" />
         </div>
       </section>
     </>

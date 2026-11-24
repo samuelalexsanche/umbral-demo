@@ -5,7 +5,7 @@ import { SEED } from "@/lib/seed";
 import { SITE } from "@/lib/format";
 
 export const metadata: Metadata = {
-  title: "Casas y departamentos nuevos en Guadalajara, Zapopan y Tlajomulco",
+  title: "Desarrollos en preventa y entrega inmediata en Guadalajara y Puerto Vallarta",
   description: "Busca departamentos nuevos por precio, recámaras, municipio, entrega y desarrolladora. Información actualizada por cada desarrolladora.",
   alternates: { canonical: "inmuebles/" },
 };

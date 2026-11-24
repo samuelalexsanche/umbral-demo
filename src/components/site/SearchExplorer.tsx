@@ -4,10 +4,11 @@ import { FunnelSimple, MapTrifold, SquaresFour, X, MagnifyingGlass } from "@phos
 import type { CreditId, Delivery, Listing, PropertyType } from "@/lib/types";
 import { useDB } from "@/lib/db";
 import { CREDITS } from "@/lib/seed";
-import { isSeededListing, MUNICIPIOS, orgOf, published } from "@/lib/queries";
+import { isSeededListing, orgOf, published, ZONAS } from "@/lib/queries";
 import { moneyShort, TYPE_LABEL } from "@/lib/format";
 import { Button, Dialog, Empty, Input, Select, cx } from "../ui";
 import ListingCard from "./ListingCard";
+import ProjectCard from "./ProjectCard";
 import MapView from "./MapView";
 
 export interface Filters {
@@ -114,6 +115,18 @@ export default function SearchExplorer() {
   const devName = (id?: string) => db.developments.find((d) => d.id === id)?.name ?? "";
   const orgName = (id: string) => db.orgs.find((o) => o.id === id)?.name ?? "";
   const results = useMemo(() => applyFilters(base, f, devName, orgName), [base, f]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Una tarjeta por proyecto: se agrupan las tipologías que pasaron los filtros, en el orden elegido.
+  const groups = useMemo(() => {
+    const out: { key: string; dev?: (typeof db.developments)[number]; items: Listing[] }[] = [];
+    for (const l of results) {
+      const dev = db.developments.find((d) => d.id === l.developmentId);
+      const key = dev ? dev.id : l.id;
+      const g = out.find((x) => x.key === key);
+      if (g) g.items.push(l);
+      else out.push({ key, dev, items: [l] });
+    }
+    return out;
+  }, [results, db.developments]);
 
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setF((x) => ({ ...x, [k]: v }));
   const toggle = <K extends "c" | "a">(k: K, v: string) =>
@@ -148,10 +161,10 @@ export default function SearchExplorer() {
         </div>
       </Group>
       <div className="grid grid-cols-2 gap-3">
-        <Group label="Municipio">
+        <Group label="Ciudad">
           <Select value={f.m} onChange={(e) => set("m", e.target.value)}>
-            <option value="">Todos</option>
-            {MUNICIPIOS.map((m) => <option key={m}>{m}</option>)}
+            <option value="">Todas</option>
+            {ZONAS.map((z) => <optgroup key={z.group} label={z.group}>{z.items.map((m) => <option key={m}>{m}</option>)}</optgroup>)}
           </Select>
         </Group>
         <Group label="Tipo">
@@ -215,7 +228,7 @@ export default function SearchExplorer() {
   return (
     <div className="mx-auto max-w-[1400px] px-4 pt-8 sm:px-6">
       <div className="grid gap-4">
-        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Casas y departamentos nuevos en Guadalajara</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Desarrollos en preventa y entrega inmediata</h1>
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="relative min-w-[240px] flex-1">
             <MagnifyingGlass size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3" />
@@ -237,7 +250,7 @@ export default function SearchExplorer() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2" aria-live="polite">
-          <p className="mr-2 text-sm text-ink-2"><strong className="text-ink tabular">{results.length}</strong> {results.length === 1 ? "resultado" : "resultados"}</p>
+          <p className="mr-2 text-sm text-ink-2"><strong className="text-ink tabular">{groups.length}</strong> {groups.length === 1 ? "proyecto" : "proyectos"} · {results.length} {results.length === 1 ? "tipología" : "tipologías"}</p>
           {chips.map((c) => (
             <button key={c.label} onClick={c.clear} className="press inline-flex items-center gap-1 rounded-full bg-ink px-3 py-1 text-sm font-medium text-paper hover:bg-slate">
               {c.label} <X size={13} aria-label="Quitar" />
@@ -255,9 +268,13 @@ export default function SearchExplorer() {
             </Empty>
           ) : (
             <div className={cx("grid gap-5 sm:grid-cols-2", view === "grid" && "lg:grid-cols-3 xl:grid-cols-4")}>
-              {results.map((l) => (
-                <ListingCard key={l.id} l={l} org={orgOf(db, l.orgId)} seeded={isSeededListing(l.id)} active={active === l.id} onHover={setActive} />
-              ))}
+              {groups.map((g) =>
+                g.dev ? (
+                  <ProjectCard key={g.key} dev={g.dev} listings={g.items} org={orgOf(db, g.dev.orgId)} active={active === g.key} onHover={setActive} />
+                ) : (
+                  <ListingCard key={g.key} l={g.items[0]} org={orgOf(db, g.items[0].orgId)} seeded={isSeededListing(g.items[0].id)} active={active === g.key} onHover={setActive} />
+                ),
+              )}
             </div>
           )}
         </div>
@@ -266,7 +283,7 @@ export default function SearchExplorer() {
             <div className="sticky top-20 h-[calc(100dvh-6rem)] overflow-hidden rounded-[16px] border border-line">
               <MapView
                 className="h-full w-full"
-                points={results.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, label: moneyShort(l.price) }))}
+                points={groups.map((g) => ({ id: g.key, lat: g.dev?.lat ?? g.items[0].lat, lng: g.dev?.lng ?? g.items[0].lng, label: moneyShort(Math.min(...g.items.map((l) => l.price))) }))}
                 activeId={active}
                 onSelect={(id) => {
                   setActive(id);
@@ -282,7 +299,7 @@ export default function SearchExplorer() {
         {panel}
         <div className="sticky bottom-0 -mx-6 -mb-5 mt-6 flex items-center justify-between gap-3 border-t border-line bg-card px-6 py-4">
           <button onClick={() => setF({ ...EMPTY, q: f.q, s: f.s })} className="font-semibold text-ink-2 hover:text-ink">Limpiar</button>
-          <Button onClick={() => setSheet(false)}>Ver {results.length} {results.length === 1 ? "resultado" : "resultados"}</Button>
+          <Button onClick={() => setSheet(false)}>Ver {groups.length} {groups.length === 1 ? "proyecto" : "proyectos"}</Button>
         </div>
       </Dialog>
     </div>

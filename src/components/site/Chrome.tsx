@@ -88,12 +88,14 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="grid content-start gap-4">
           <Logo light />
-          <p className="max-w-sm text-sm text-paper/70">Departamentos nuevos del área metropolitana de Guadalajara, publicados por desarrolladoras aprobadas y atendidos por asesores aprobados.</p>
+          <p className="max-w-sm text-sm text-paper/70">Umbral conecta de forma rápida y segura a compradores, inversionistas, desarrolladoras y asesores inmobiliarios.</p>
+          <p className="max-w-sm text-sm text-paper/70">Desarrollos verticales en preventa y entrega inmediata, desarrolladoras aprobadas y asesores inmobiliarios calificados.</p>
         </div>
         <div className="grid content-start gap-2.5 text-sm">
           <p className="font-semibold text-paper/50">Buscar</p>
           <Link href="/inmuebles/?m=Zapopan" className="text-paper/85 hover:text-paper">Departamentos en Zapopan</Link>
           <Link href="/inmuebles/?m=Guadalajara" className="text-paper/85 hover:text-paper">Departamentos en Guadalajara</Link>
+          <Link href="/inmuebles/?m=Puerto%20Vallarta" className="text-paper/85 hover:text-paper">Departamentos en Puerto Vallarta</Link>
           <Link href="/inmuebles/?e=entrega-inmediata" className="text-paper/85 hover:text-paper">Entrega inmediata</Link>
           <Link href="/inmuebles/?e=preventa" className="text-paper/85 hover:text-paper">Preventas</Link>
         </div>

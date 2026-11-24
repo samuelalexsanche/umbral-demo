@@ -33,7 +33,7 @@ export default function RequestForm() {
     <form onSubmit={submit} noValidate className="grid gap-4 rounded-[18px] border border-line bg-card p-6 sm:p-8">
       <p className="font-display text-2xl font-semibold">Solicitar información</p>
       <Field label="Desarrolladora" htmlFor="r-co" error={err.company}><Input id="r-co" value={f.company} onChange={set("company")} aria-invalid={!!err.company} /></Field>
-      <Field label="Tu nombre" htmlFor="r-n" error={err.name}><Input id="r-n" autoComplete="name" value={f.name} onChange={set("name")} aria-invalid={!!err.name} /></Field>
+      <Field label="Contacto" htmlFor="r-n" error={err.name}><Input id="r-n" autoComplete="name" value={f.name} onChange={set("name")} aria-invalid={!!err.name} /></Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Teléfono" htmlFor="r-p" error={err.phone}><Input id="r-p" type="tel" autoComplete="tel" value={f.phone} onChange={set("phone")} aria-invalid={!!err.phone} /></Field>
         <Field label="Correo" htmlFor="r-e" error={err.email}><Input id="r-e" type="email" autoComplete="email" value={f.email} onChange={set("email")} aria-invalid={!!err.email} /></Field>

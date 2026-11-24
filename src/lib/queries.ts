@@ -21,7 +21,14 @@ export const orgOf = (db: DB, id?: string) => (id ? db.orgs.find((o) => o.id ===
 export const devOf = (db: DB, id?: string) => (id ? db.developments.find((d) => d.id === id) : undefined);
 export const userOf = (db: DB, id?: string) => (id ? db.users.find((u) => u.id === id) : undefined);
 
-export const MUNICIPIOS = ["Guadalajara", "Zapopan", "San Pedro Tlaquepaque", "Tlajomulco de Zúñiga", "Tonalá", "El Salto"];
+/** Municipios que una desarrolladora puede elegir al dar de alta un desarrollo o una ficha. */
+export const MUNICIPIOS = ["Guadalajara", "Zapopan", "San Pedro Tlaquepaque", "Tlajomulco de Zúñiga", "Tonalá", "El Salto", "Puerto Vallarta", "Nuevo Vallarta", "Punta de Mita"];
+
+/** Plazas que ve el comprador en la búsqueda. Nuevo Vallarta y Punta de Mita (Nayarit) van aparte para no confundir el mercado de Puerto Vallarta. */
+export const ZONAS: { group: string; items: string[] }[] = [
+  { group: "Jalisco", items: ["Guadalajara", "Zapopan", "Puerto Vallarta"] },
+  { group: "Riviera Nayarit", items: ["Nuevo Vallarta", "Punta de Mita"] },
+];
 
 /** Unidades disponibles de una ficha: si trae inventario real, se cuentan sus unidades; si no, el dato capturado. */
 export const unitsOf = (l: Listing) => (l.units?.length ? l.units.filter((u) => u.status === "disponible").length : l.unitsAvailable ?? 1);
@@ -42,4 +49,16 @@ export function orgStats(db: DB, orgId: string) {
     desarrollos: db.developments.filter((d) => d.orgId === orgId).length,
     desarrollosEnVenta: db.developments.filter((d) => d.orgId === orgId && devIds.has(d.id)).length,
   };
+}
+
+/** "Estudio, 1, 2 y 3 recámaras" a partir de las tipologías de un proyecto. */
+export function bedroomsLabel(listings: Pick<Listing, "title" | "bedrooms">[]) {
+  const keys = [...new Set(listings.map((l) => (/^Estudio/i.test(l.title) ? 0 : l.bedrooms)))].sort((a, b) => a - b);
+  if (!keys.length) return "";
+  const studio = keys[0] === 0;
+  const nums = keys.filter((k) => k > 0).map((k) => (k >= 4 ? "4 o más" : String(k)));
+  const join = (a: string[]) => (a.length > 1 ? `${a.slice(0, -1).join(", ")} y ${a[a.length - 1]}` : a[0]);
+  if (!nums.length) return "Estudios";
+  const rec = `${join(nums)} ${nums.length === 1 && nums[0] === "1" ? "recámara" : "recámaras"}`;
+  return studio ? `Estudios, ${rec}` : rec;
 }

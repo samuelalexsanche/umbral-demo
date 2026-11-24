@@ -9,9 +9,9 @@ const sans = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE + "/"),
-  title: { default: "Umbral · Departamentos nuevos en Guadalajara de desarrolladoras verificadas", template: "%s · Umbral" },
+  title: { default: "Umbral · Departamentos nuevos en Guadalajara y Puerto Vallarta", template: "%s · Umbral" },
   description:
-    "Departamentos nuevos en Guadalajara y Zapopan de desarrolladoras verificadas. Compara tasas bancarias, calcula tu mensualidad y habla con un asesor aprobado.",
+    "Departamentos nuevos en Guadalajara y Puerto Vallarta, en preventa y entrega inmediata. Umbral conecta de forma rápida y segura a compradores, inversionistas, desarrolladoras y asesores inmobiliarios.",
   applicationName: "Umbral",
   robots: { index: false, follow: false },
   openGraph: { type: "website", locale: "es_MX", siteName: "Umbral", images: [{ url: "img/og.jpg", width: 1200, height: 630 }] },

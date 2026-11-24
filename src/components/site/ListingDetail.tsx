@@ -3,12 +3,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bed, Bathtub, Car, Ruler, Stack, Tree, SealCheck, Heart, WhatsappLogo, Clock, ArrowRight, Images, CheckCircle, Warning } from "@phosphor-icons/react";
 import { addView, can, useDB, useHydrated, useSessionUser } from "@/lib/db";
-import { available, devHref, isSeededListing, orgHref, orgOf, devOf } from "@/lib/queries";
+import { available, devHref, orgHref, orgOf, devOf, unitsOf } from "@/lib/queries";
 import { CREDITS } from "@/lib/seed";
 import { asset, bathsLabel, deliveryLabel, money, priceLabel, TYPE_LABEL, waLink } from "@/lib/format";
 import { toggleFav, useFavs } from "@/lib/favs";
 import { Badge, Button, Dialog, Empty, OrgLogo } from "../ui";
-import ListingCard from "./ListingCard";
+import ProjectCard from "./ProjectCard";
 import MapView from "./MapView";
 import MortgageCalc from "./MortgageCalc";
 import ContactDialog from "./ContactDialog";
@@ -39,7 +39,16 @@ export default function ListingDetail({ id }: { id: string }) {
     return <div className="mx-auto max-w-3xl px-4 py-24"><Empty title="Este inmueble no está publicado" action={<Button href="/inmuebles/">Ver inmuebles disponibles</Button>}>Está en borrador o pausado por su desarrolladora.</Empty></div>;
 
   const fav = favs.includes(l.id);
-  const similar = available(db).filter((x) => x.id !== l.id && (x.municipio === l.municipio || Math.abs(x.price - l.price) / l.price < 0.25)).slice(0, 3);
+  // Proyectos parecidos (otros desarrollos), primero los de otras desarrolladoras y luego por cercanía de precio y ciudad.
+  const others = available(db).filter((x) => x.developmentId && x.developmentId !== l.developmentId);
+  const similar = [...new Set(others.map((x) => x.developmentId!))]
+    .map((id) => ({ dev: db.developments.find((d) => d.id === id)!, items: others.filter((x) => x.developmentId === id) }))
+    .filter((g) => g.dev)
+    .map((g) => ({ ...g, score: (g.dev.orgId !== l.orgId ? 0 : 10) + (g.dev.municipio === l.municipio ? 0 : 2) + Math.min(...g.items.map((x) => Math.abs(x.price - l.price) / l.price)) }))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 3);
+  const unitsAvail = l.units?.length ? unitsOf(l) : l.unitsAvailable;
+  const unitsTotal = l.units?.length ? l.units.length : l.unitsTotal;
   const sold = l.status === "vendido";
   const specs = [
     { i: Bed, t: `${l.bedrooms} ${l.bedrooms === 1 ? "recámara" : "recámaras"}` },
@@ -173,14 +182,11 @@ export default function ListingDetail({ id }: { id: string }) {
 
           <section className="grid gap-4">
             <h2 className="font-display text-2xl font-semibold tracking-tight">Quién lo vende</h2>
-            <div className="grid gap-4 rounded-[16px] border border-line bg-card p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+            <Link href={orgHref(org)} className="press flex items-center gap-4 rounded-[16px] border border-line bg-card p-5 hover:border-ink-3">
               <OrgLogo org={org} size={56} />
-              <div>
-                <p className="flex items-center gap-1.5 font-display text-xl font-semibold">{org.name} {org.verified && <SealCheck size={20} weight="fill" className="text-ok" aria-label="Verificada" />}</p>
-                <p className="text-sm text-ink-2">Desarrolladora desde {org.since}{org.seal ? " · Sello verde de confianza" : ""} · responde en ~{org.responseMinutes} min</p>
-              </div>
-              <Button href={orgHref(org)} variant="outline" size="sm">Ver perfil</Button>
-            </div>
+              <p className="flex items-center gap-1.5 font-display text-xl font-semibold">{org.name} {org.verified && <SealCheck size={20} weight="fill" className="text-ok" aria-label="Verificada" />}</p>
+              <ArrowRight size={18} className="ml-auto text-ink-3" aria-hidden />
+            </Link>
           </section>
         </div>
 
@@ -189,9 +195,9 @@ export default function ListingDetail({ id }: { id: string }) {
             <div>
               <p className="text-sm text-ink-3">{l.delivery === "preventa" ? "Precio de preventa desde" : "Precio"}</p>
               <p className="font-display text-[2.4rem] font-semibold leading-none tracking-tight tabular">{priceLabel(l.price)}</p>
-              {l.unitsAvailable !== undefined && (
-                <p className={`mt-2 text-sm font-semibold ${l.unitsAvailable <= 5 ? "text-brick" : "text-ink-2"}`}>
-                  {sold ? "Sin unidades disponibles" : `${l.unitsAvailable} de ${l.unitsTotal} unidades disponibles`}
+              {unitsAvail !== undefined && (
+                <p className={`mt-2 text-sm font-semibold ${unitsAvail <= 5 ? "text-brick" : "text-ink-2"}`}>
+                  {sold || unitsAvail === 0 ? "Sin unidades disponibles" : unitsTotal ? `${unitsAvail} de ${unitsTotal} unidades disponibles` : `${unitsAvail} ${unitsAvail === 1 ? "unidad disponible" : "unidades disponibles"}`}
                 </p>
               )}
               <p className="mt-1 text-xs text-ink-3">Actualizado por {org.name} el {new Date(l.updatedAt).toLocaleDateString("es-MX", { day: "numeric", month: "long" })}</p>
@@ -211,7 +217,7 @@ export default function ListingDetail({ id }: { id: string }) {
         <section className="mt-20">
           <h2 className="mb-6 font-display text-2xl font-semibold tracking-tight">También te puede interesar</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {similar.map((s) => <ListingCard key={s.id} l={s} org={orgOf(db, s.orgId)} seeded={isSeededListing(s.id)} />)}
+            {similar.map((g) => <ProjectCard key={g.dev.id} dev={g.dev} listings={g.items} org={orgOf(db, g.dev.orgId)} />)}
           </div>
         </section>
       )}

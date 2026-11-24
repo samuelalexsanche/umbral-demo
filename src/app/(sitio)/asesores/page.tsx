@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 };
 
 const PERKS = [
-  { i: Buildings, t: "Inventario en tiempo real", d: "Precios, disponibilidad y condiciones de pago tal como los actualiza cada desarrolladora." },
+  { i: Buildings, t: "Inventario en tiempo real", d: "Precios, disponibilidad, condiciones y formas de pago por desarrollo." },
   { i: FilePdf, t: "Cotización personalizada", d: "Genera cotizaciones en PDF con tu nombre, teléfono, celular y correo." },
   { i: DownloadSimple, t: "Material de venta", d: "Brochures, renders, videos y publicidad de cada desarrollo, listos para compartir." },
-  { i: GraduationCap, t: "Academia", d: "Cursos de bienes raíces, capacitación de cada proyecto y eventos." },
+  { i: GraduationCap, t: "Academia", d: "Cursos, certificaciones, capacitación, ventas y eventos." },
 ];
 
 export default function Page() {
@@ -20,7 +20,7 @@ export default function Page() {
     <div className="mx-auto grid max-w-[1200px] gap-12 px-4 pt-12 sm:px-6 lg:grid-cols-[1fr_1.05fr]">
       <div className="grid content-start gap-6">
         <h1 className="font-display text-[clamp(2.3rem,4.6vw,3.8rem)] font-semibold leading-[1.04] tracking-[-0.03em] text-balance">Portal de asesores</h1>
-        <p className="max-w-[50ch] text-lg text-ink-2">Umbral es una plataforma privada. Para vender el inventario de nuestras desarrolladoras, envía tu solicitud; el administrador la revisa y, si se aprueba, te da acceso.</p>
+        <p className="max-w-[50ch] text-lg text-ink-2">Umbral es la plataforma que te permite tener el mejor inventario y colaborar con las mejores desarrolladoras.</p>
         <ul className="grid gap-4">
           {PERKS.map(({ i: Icon, t, d }) => (
             <li key={t} className="flex gap-4">

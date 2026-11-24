@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import { SealCheck, UsersThree, ChatCircleDots, Newspaper, ChartBar, Stack } from "@phosphor-icons/react/dist/ssr";
 import RequestForm from "./RequestForm";
-import { asset } from "@/lib/format";
+import CityPair from "@/components/site/CityPair";
 
 export const metadata: Metadata = {
   title: "Coloca el inventario de tu desarrollo en Umbral",
-  description: "Para desarrolladoras de Guadalajara: perfil verificado con historia y avances de obra, inventario en tiempo real, red de asesores aprobados que reciben y atienden prospectos, y un asistente de IA con tu información.",
+  description: "Para desarrolladoras de Guadalajara y Puerto Vallarta: perfil verificado con historia y avances de obra, inventario en tiempo real, red de asesores aprobados que reciben y atienden prospectos, y un asistente de IA con tu información.",
   alternates: { canonical: "publica-tus-desarrollos/" },
 };
 
 const FEATURES = [
-  { i: SealCheck, t: "Perfil con calificación de confianza", d: "Tu historia, inventario actual, nuevos lanzamientos y la calificación de confianza. El sello verde distingue a quien cumple los criterios." },
-  { i: Stack, t: "Inventario en tiempo real", d: "Actualizas inventario, precios, condiciones de pago y créditos desde tu panel; el sitio y los asesores lo ven al momento." },
-  { i: UsersThree, t: "Red de asesores aprobados", d: "Solo el equipo de asesores de la plataforma y asesores externos filtrados por el administrador tienen acceso a tu inventario." },
-  { i: ChartBar, t: "Prospectos asignados", d: "La plataforma reparte los prospectos entre sus asesores internos, con etapas y notas, y tú ves los de tus desarrollos." },
-  { i: Newspaper, t: "Noticias y avances de obra", d: "Publicas avances, noticias y lanzamientos en tu perfil y en la sección de noticias." },
-  { i: ChatCircleDots, t: "Asistente de IA propio", d: "Responde dudas a cualquier hora con la información que tú cargas y pasa la conversación a un asesor." },
+  { i: SealCheck, t: "Perfil con calificación de confianza", d: "Tu trayectoria, inventario, nuevos lanzamientos y la calificación de confianza, con sello de calidad y confianza." },
+  { i: Stack, t: "Inventario en tiempo real", d: "Actualizas tu inventario, precios, condiciones de pago, tipos de crédito y fechas de entrega." },
+  { i: UsersThree, t: "Red de asesores aprobados", d: "Solo el equipo de asesores de Umbral y asesores externos certificados obtienen el acceso a tu inventario." },
+  { i: ChartBar, t: "Prospectos asignados", d: "La plataforma genera prospectos interesados y calificados para cada proyecto." },
+  { i: Newspaper, t: "Noticias y avances de obra", d: "Publicamos avances de obra, noticias, contenido, nuevos lanzamientos y eventos." },
+  { i: ChatCircleDots, t: "Asistente de IA propio", d: "Responde dudas o la información que se requiera en todo momento y pasa a un asesor calificado de Umbral." },
 ];
 
 export default function Page() {
@@ -24,13 +24,12 @@ export default function Page() {
       <section className="mx-auto grid max-w-[1400px] gap-10 px-4 pt-12 sm:px-6 lg:grid-cols-2 lg:items-center">
         <div className="grid gap-5">
           <h1 className="font-display text-[clamp(2.4rem,5vw,4.2rem)] font-semibold leading-[1.03] tracking-[-0.03em] text-balance">Coloca tu inventario frente a compradores y asesores aprobados.</h1>
-          <p className="max-w-[48ch] text-lg text-ink-2">Umbral es una plataforma privada: solo publican desarrolladoras aceptadas y solo asesores aprobados acceden al inventario. Solicita información para colocar tu inventario; el alta está sujeta a condiciones.</p>
+          <p className="max-w-[48ch] text-lg text-ink-2">Umbral es una plataforma que trabaja con desarrolladoras reconocidas en el mercado inmobiliario y es atendida por asesores capacitados para promover los proyectos. Solicita información para colocar tu inventario.</p>
           <div className="flex flex-wrap gap-3">
             <a href="#solicitud" className="press inline-flex h-12 items-center rounded-full bg-brick px-6 font-semibold text-white hover:bg-brick-d">Solicitar información</a>
           </div>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={asset("/img/casillas/avila-leon-1.webp")} alt="Render de Ávila & León, de Grupo Casillas" className="aspect-[4/3] w-full rounded-[22px] object-cover" />
+        <div className="text-ink"><CityPair className="aspect-[4/3] rounded-[22px]" /></div>
       </section>
 
       <section className="mx-auto mt-24 max-w-[1400px] px-4 sm:px-6">
@@ -51,10 +50,10 @@ export default function Page() {
           <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Cómo funciona</h2>
           <ol className="grid gap-5">
             {[
-              ["Solicitud", "Nos compartes tu empresa y tus desarrollos. Revisamos que cumplan las condiciones de la plataforma."],
-              ["Alta y verificación", "Creamos tu perfil y tu acceso, y revisamos documentos para tu calificación de confianza."],
-              ["Publicas tu inventario", "Desarrollos, tipologías, fotos, precios, condiciones de pago y material para asesores."],
-              ["Asesores y prospectos", "Los asesores aprobados cotizan tu inventario y la plataforma asigna los prospectos a su equipo interno."],
+              ["Solicitud", "Compártenos tu trayectoria y tus desarrollos. Revisamos que cumplan la garantía Umbral."],
+              ["Alta y verificación", "Creamos tu perfil y tu acceso, y revisamos documentos para otorgar el sello de confianza."],
+              ["Publicas tu inventario", "Desarrollos, tipologías, disponibilidad, precios, condiciones y formas de pago, videos, renders y eventos."],
+              ["Asesores Umbral", "Los asesores aprobados por Umbral cotizan y promueven tus proyectos."],
             ].map(([t, d], i) => (
               <li key={t} className="flex gap-4">
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink font-semibold text-paper tabular">{i + 1}</span>
