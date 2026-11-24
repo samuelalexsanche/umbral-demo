@@ -13,6 +13,7 @@ import MapView from "./MapView";
 const CHOICES: { id: CreditId | "todos"; label: string }[] = [
   { id: "todos", label: "Cualquiera" },
   { id: "bancario", label: "Crédito bancario" },
+  { id: "directo", label: "Crédito directo" },
   { id: "contado", label: "Contado" },
 ];
 

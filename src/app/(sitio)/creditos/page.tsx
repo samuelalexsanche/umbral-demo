@@ -6,7 +6,7 @@ import { BankRates, CreditRequest, CreditSimulator } from "@/components/site/Cre
 
 export const metadata: Metadata = {
   title: "Créditos hipotecarios: tasas bancarias y simulador",
-  description: "Compara tasas de crédito hipotecario de los principales bancos, calcula tu mensualidad y tramita tu crédito con un asesor para comprar departamento nuevo en Guadalajara.",
+  description: "Compara tasas de crédito hipotecario de los principales bancos, calcula tu mensualidad y tramita tu crédito con un asesor para comprar departamento nuevo en Guadalajara o Puerto Vallarta.",
   alternates: { canonical: "creditos/" },
 };
 

@@ -4,7 +4,7 @@ import ApplicationForm from "./ApplicationForm";
 
 export const metadata: Metadata = {
   title: "Portal de asesores inmobiliarios",
-  description: "Asesores inmobiliarios aprobados: inventario en tiempo real de desarrollos en Guadalajara, cotizaciones con tus datos, material de venta y academia. Solicita tu acceso.",
+  description: "Asesores inmobiliarios aprobados: inventario en tiempo real de desarrollos en Guadalajara y Puerto Vallarta, cotizaciones con tus datos, material de venta y academia. Solicita tu acceso.",
   alternates: { canonical: "asesores/" },
 };
 

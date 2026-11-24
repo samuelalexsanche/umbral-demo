@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { OrgDirectory } from "@/components/site/Profiles";
 
 export const metadata: Metadata = {
-  title: "Desarrolladoras en Guadalajara",
-  description: "Perfiles de las desarrolladoras que publican vivienda nueva en Guadalajara y Zapopan: historia, inventario actual, avances de obra y calificación de confianza.",
+  title: "Desarrolladoras en Guadalajara y Puerto Vallarta",
+  description: "Perfiles de las desarrolladoras que publican vivienda nueva en Guadalajara, Zapopan y Puerto Vallarta: historia, inventario actual, avances de obra y calificación de confianza.",
   alternates: { canonical: "desarrolladoras/" },
 };
 

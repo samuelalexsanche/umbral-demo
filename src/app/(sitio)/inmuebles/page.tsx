@@ -18,7 +18,7 @@ export default function Page() {
         data={{
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: "Inmuebles nuevos en la zona metropolitana de Guadalajara",
+          name: "Desarrollos en preventa y entrega inmediata en Guadalajara y Puerto Vallarta",
           numberOfItems: list.length,
           itemListElement: list.map((l, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE}/inmueble/${l.slug}/`, name: l.title })),
         }}

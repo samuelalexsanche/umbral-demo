@@ -19,6 +19,13 @@ export const CREDITS: Credit[] = [
     who: "Cualquier comprador con recursos propios.",
     how: "Pregunta por descuentos de contado y esquemas de pago durante la obra.",
   },
+  {
+    id: "directo",
+    name: "Crédito directo",
+    short: "Financiamiento que otorga la propia desarrolladora, sin banco: enganche y mensualidades a un plazo pactado con ella.",
+    who: "Compradores que prefieren no pasar por un banco o que aún no califican para una hipoteca.",
+    how: "Cada desarrolladora fija su enganche, plazo y tasa; el asesor te comparte las condiciones vigentes del proyecto.",
+  },
 ];
 
 export const AMENITIES = [
@@ -142,6 +149,14 @@ const FEATURES: Record<string, string[]> = {
   "dev-avila": ["Precio de preventa", "A 5 minutos del Country Club", "A pasos de la Línea 3"],
 };
 const isStudio = (u: Unit) => u.model === "E";
+/** Entrega más próxima ("01/2028" en su panel → "2028-01"), solo de fechas futuras; en preventa es la que se publica. */
+const firstDelivery = (units: Unit[]) =>
+  units
+    .map((u) => u.delivery?.match(/^(\d{2})\/(\d{4})$/))
+    .filter((m): m is RegExpMatchArray => !!m)
+    .map((m) => `${m[2]}-${m[1]}`)
+    .filter((ym) => ym >= INVENTARIO_FECHA.slice(0, 7))
+    .sort()[0];
 const groupKey = (u: Unit) => (isStudio(u) ? 0 : u.bedrooms);
 
 const listings: Listing[] = developments.flatMap((d) => {
@@ -171,6 +186,7 @@ const listings: Listing[] = developments.flatMap((d) => {
       m2Built: m2a,
       levels: 1,
       delivery: d.delivery,
+      deliveryDate: d.delivery === "preventa" ? firstDelivery(base) : undefined,
       unitsAvailable: avail.length,
       credits: ["bancario", "contado"],
       paymentTerms: d.paymentTerms,
@@ -195,6 +211,7 @@ const listings: Listing[] = developments.flatMap((d) => {
 for (const d of developments) {
   const avail = (UNITS[d.id] ?? []).filter((x) => x.status === "disponible" && x.price > 0);
   d.priceFrom = avail.length ? Math.min(...avail.map((x) => x.price)) : undefined;
+  if (d.delivery === "preventa") d.deliveryDate = firstDelivery(UNITS[d.id] ?? []) ?? d.deliveryDate;
 }
 
 const u = (id: string, name: string, email: string, role: User["role"], title: string, extra: Partial<User> = {}): User => ({
@@ -321,7 +338,7 @@ const courses: Course[] = [
 
 export function seedDB(): DB {
   return {
-    version: 15,
+    version: 16,
     orgs: structuredClone(orgs),
     developments: structuredClone(developments),
     listings: structuredClone(listings),

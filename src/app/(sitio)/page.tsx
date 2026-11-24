@@ -36,7 +36,7 @@ export default function Home() {
         data={{
           "@context": "https://schema.org",
           "@graph": [
-            { "@type": "Organization", "@id": `${SITE}/#org`, name: "Umbral", url: `${SITE}/`, logo: `${SITE}/icon.svg`, areaServed: "Zona Metropolitana de Guadalajara, Jalisco, México" },
+            { "@type": "Organization", "@id": `${SITE}/#org`, name: "Umbral", url: `${SITE}/`, logo: `${SITE}/icon.svg`, areaServed: ["Guadalajara, Jalisco, México", "Puerto Vallarta, Jalisco, México"] },
             { "@type": "WebSite", "@id": `${SITE}/#web`, name: "Umbral", url: `${SITE}/`, inLanguage: "es-MX", publisher: { "@id": `${SITE}/#org` } },
             { "@type": "FAQPage", mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
           ],
@@ -144,7 +144,7 @@ export default function Home() {
         <div className="grid items-center gap-8 overflow-hidden rounded-[22px] bg-ink p-8 text-paper sm:p-12 lg:grid-cols-[1.2fr_1fr]">
           <div className="grid gap-4">
             <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">¿Eres desarrollador o asesor?</h2>
-            <p className="font-semibold text-brick-soft">Colabora con Umbral Inmobiliario</p>
+            <p className="font-semibold text-brick-soft">¿Te interesa colaborar con Umbral Inmobiliario?</p>
             <p className="max-w-[52ch] text-paper/75">Súmate a nuestra red de aliados. Como desarrollador encontrarás un aliado comercial para promover y vender tus proyectos; como asesor, una amplia cartera de inventario, material de venta, academia y la oportunidad de colaborar con las mejores desarrolladoras del país.</p>
             <div className="flex flex-wrap gap-3">
               <Link href="/publica-tus-desarrollos/" className="press inline-flex h-12 items-center gap-2 rounded-full bg-brick px-6 font-semibold text-white hover:bg-brick-d">Para desarrolladores <ArrowRight size={18} /></Link>

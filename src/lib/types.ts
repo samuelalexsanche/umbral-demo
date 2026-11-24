@@ -3,7 +3,7 @@ export type Role = "superadmin" | "desarrolladora" | "asesor";
 /** Interno: equipo de la plataforma, recibe prospectos. Externo: aprobado por el administrador, solo consulta y cotiza. */
 export type AsesorTipo = "interno" | "externo";
 
-export type CreditId = "contado" | "bancario";
+export type CreditId = "contado" | "bancario" | "directo";
 
 export type PropertyType = "casa" | "departamento" | "townhouse" | "terreno";
 

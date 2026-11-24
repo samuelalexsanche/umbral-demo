@@ -88,8 +88,8 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="grid content-start gap-4">
           <Logo light />
-          <p className="max-w-sm text-sm text-paper/70">Umbral conecta de forma rápida y segura a compradores, inversionistas, desarrolladoras y asesores inmobiliarios.</p>
-          <p className="max-w-sm text-sm text-paper/70">Desarrollos verticales en preventa y entrega inmediata, desarrolladoras aprobadas y asesores inmobiliarios calificados.</p>
+          <p className="max-w-sm text-sm text-paper/70">Umbral es una plataforma que conecta de forma rápida y segura a compradores, inversionistas, desarrolladoras y asesores inmobiliarios.</p>
+          <p className="max-w-sm text-sm text-paper/70">Explora las mejores oportunidades de compra e inversión: departamentos en preventa y entrega inmediata, desarrolladoras verificadas y asesores calificados.</p>
         </div>
         <div className="grid content-start gap-2.5 text-sm">
           <p className="font-semibold text-paper/50">Buscar</p>

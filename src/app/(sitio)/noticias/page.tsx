@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { NewsIndex } from "@/components/site/News";
 
 export const metadata: Metadata = {
-  title: "Noticias del mercado inmobiliario en Guadalajara",
+  title: "Noticias del mercado inmobiliario en Guadalajara y Puerto Vallarta",
   description: "Mercado inmobiliario, noticias financieras, tipo de cambio, nuevos proyectos, avances de obra y entrevistas con especialistas.",
   alternates: { canonical: "noticias/" },
 };
