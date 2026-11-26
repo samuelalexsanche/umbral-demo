@@ -1,11 +1,15 @@
 import type { CreditId, Delivery, Listing, PropertyType } from "./types";
 import { CREDITS } from "./seed";
+import { safeUrl } from "./sanitize";
 
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 export const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://samuelalexsanche.github.io") + BASE;
 
-/** Ruta de un archivo en /public respetando el basePath de GitHub Pages. Deja pasar data: y http(s). */
-export const asset = (p: string) => (p.startsWith("/") ? BASE + p : p);
+/** Ruta de un archivo: las del sitio llevan el basePath; cualquier URL pasa por safeUrl (bloquea javascript: y similares). */
+export const asset = (p: string | undefined | null) => {
+  const s = safeUrl(p);
+  return s.startsWith("/") ? BASE + s : s;
+};
 
 const mxn = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
 export const money = (n: number) => mxn.format(n);

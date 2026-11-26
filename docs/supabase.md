@@ -8,6 +8,8 @@ Pasos para Alex. Los que dicen "tú" requieren tu cuenta de Supabase: Claude no 
 2. Guarda la contraseña de la base en tu gestor de contraseñas.
 3. En **Authentication → Sign In / Providers**, desactiva **Allow new users to sign up**. La plataforma es privada: las cuentas solo se crean desde el panel.
 4. En **Authentication → URL Configuration**, pon el dominio del sitio en *Site URL* y agrega `https://TU-DOMINIO/panel/cuenta/` en *Redirect URLs* (para recuperar contraseña).
+5. En **Authentication → Providers → Email**: *Minimum password length* = **10**, *Password requirements* = **Letters and digits**, y activa **Secure password change**. Es la misma regla que pide el panel.
+6. En **Authentication → Rate Limits** deja los límites por defecto (o más bajos). Son el freno real contra quien intente adivinar contraseñas.
 
 ## 2. Esquema y seguridad (tú, en la terminal)
 
@@ -25,7 +27,19 @@ npx supabase link --project-ref TU_PROJECT_REF
 npx supabase db push
 ```
 
-Eso aplica `supabase/migrations/20261108000000_umbral.sql`: tablas, políticas RLS por rol, triggers que protegen roles y sello verde, las funciones `create_lead`, `submit_application` y `add_view`, y el bucket `material`.
+Eso aplica las tres migraciones de `supabase/migrations/`:
+
+- `20261108000000_umbral.sql`: tablas, políticas RLS por rol, triggers que protegen roles y sello verde, `create_lead`, `submit_application`, `add_view` y el bucket `material`.
+- `20261109000000_equipos.sql`: equipos de las desarrolladoras y `org_team()`.
+- `20261125000000_seguridad.sql`: validación de documentos (URLs seguras, tamaño, ids), campos protegidos, formularios públicos con freno anti-spam (`submit_request` incluida) y tipos y carpetas de archivos. Detalle en `docs/seguridad.md`.
+
+Después comprueba los permisos con la prueba automática (usa usuarios temporales `t-*@umbral.test` y los borra al final; córrela contra un proyecto de pruebas o antes de cargar datos reales). Necesita Node 22:
+
+```bash
+SUPABASE_URL=https://TU_PROJECT_REF.supabase.co ANON=TU_ANON_KEY SERVICE=TU_SERVICE_ROLE_KEY node scripts/probar-permisos.mjs
+```
+
+Debe terminar en "51 de 51 pruebas pasaron".
 
 ## 3. Función de usuarios (tú, en la terminal)
 
@@ -33,10 +47,10 @@ Eso aplica `supabase/migrations/20261108000000_umbral.sql`: tablas, políticas R
 npx supabase functions deploy admin-users
 ```
 
-Opcional: limita quién la puede llamar desde el navegador.
+Limita qué sitio la puede llamar desde el navegador (sin esto solo acepta localhost). Si hay varios dominios, sepáralos con comas:
 
 ```bash
-npx supabase secrets set ALLOWED_ORIGIN=https://TU-DOMINIO
+npx supabase secrets set ALLOWED_ORIGIN=https://TU-DOMINIO,https://www.TU-DOMINIO
 ```
 
 ## 4. Primer administrador (tú)

@@ -22,7 +22,7 @@ export default function CityPair({ className }: { className?: string }) {
       </div>
       <figcaption className="text-[11px] opacity-60">
         Fotos: {CITIES.map((c, i) => (
-          <span key={c.name}>{i > 0 && " · "}<a href={c.url} target="_blank" rel="noopener" className="underline">{c.credit}</a>, {c.license}</span>
+          <span key={c.name}>{i > 0 && " · "}<a href={c.url} target="_blank" rel="noopener noreferrer" className="underline">{c.credit}</a>, {c.license}</span>
         ))}
       </figcaption>
     </figure>

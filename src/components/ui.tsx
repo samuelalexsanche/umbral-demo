@@ -1,5 +1,6 @@
 "use client";
 import { asset } from "@/lib/format";
+import { safeUrl } from "@/lib/sanitize";
 import Link from "next/link";
 import { forwardRef, useEffect, useRef, type ReactNode, type ComponentProps } from "react";
 import { X } from "@phosphor-icons/react";
@@ -27,7 +28,7 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
   const cls = cx("press inline-flex items-center justify-center rounded-full font-semibold whitespace-nowrap disabled:opacity-50 disabled:pointer-events-none", btn[variant], size[s], className);
   if (href) {
     return external ? (
-      <a href={href} target="_blank" rel="noopener" className={cls}>{children}</a>
+      <a href={safeUrl(href) || undefined} target="_blank" rel="noopener noreferrer" className={cls}>{children}</a>
     ) : (
       <Link href={href} className={cls}>{children}</Link>
     );

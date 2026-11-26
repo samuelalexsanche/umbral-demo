@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react";
 import { submitApplication } from "@/lib/db";
+import { isEmail } from "@/lib/sanitize";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 
 export default function ApplicationForm() {
@@ -11,17 +12,19 @@ export default function ApplicationForm() {
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
 
   const [busy, setBusy] = useState(false);
+  const [trap, setTrap] = useState("");
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (f.name.trim().length < 5) er.name = "Escribe nombre y apellido.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email)) er.email = "Escribe un correo válido; será tu usuario.";
+    if (!isEmail(f.email)) er.email = "Escribe un correo válido; será tu usuario.";
     if (f.phone.replace(/\D/g, "").length < 10) er.phone = "Escribe un teléfono de 10 dígitos.";
     if (!f.experience) er.experience = "Elige tu experiencia.";
     if (f.company.trim().length < 2) er.company = "Escribe tu inmobiliaria, empresa o bróker; si trabajas por tu cuenta, escribe Independiente.";
     if (f.zone.trim().length < 3) er.zone = "Escribe la ciudad donde trabajas.";
     setErr(er);
     if (Object.keys(er).length) return;
+    if (trap) return setSent(true);
     setBusy(true);
     const r = await submitApplication({ ...f, name: f.name.trim(), phone: f.phone.trim(), company: f.company.trim(), zone: f.zone.trim(), message: f.message.trim() });
     setBusy(false);
@@ -41,6 +44,7 @@ export default function ApplicationForm() {
   return (
     <form onSubmit={submit} noValidate className="grid gap-4 rounded-[18px] border border-line bg-card p-6 sm:p-8">
       <p className="font-display text-2xl font-semibold">Solicitud de acceso</p>
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={trap} onChange={(e) => setTrap(e.target.value)} className="absolute -left-[9999px] h-px w-px opacity-0" />
       <Field label="Nombre completo" htmlFor="a-n" error={err.name}><Input id="a-n" autoComplete="name" value={f.name} onChange={set("name")} aria-invalid={!!err.name} /></Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Correo" htmlFor="a-e" error={err.email}><Input id="a-e" type="email" autoComplete="email" value={f.email} onChange={set("email")} aria-invalid={!!err.email} /></Field>

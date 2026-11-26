@@ -98,12 +98,19 @@ export async function adminUsers<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+/** Los mismos tipos que acepta el bucket "material" (ver migración de seguridad). Nada de HTML, SVG ni scripts. */
+const ALLOWED_TYPES = /^(image\/(jpeg|png|webp|gif|avif)|application\/(pdf|zip|msword|vnd\.ms-(powerpoint|excel)|vnd\.openxmlformats-officedocument\.[a-z.]+)|video\/(mp4|quicktime|webm))$/;
+
 const safeName = (n: string) => n.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9.]+/g, "-").slice(-80);
 
 export async function uploadToStorage(file: File, folder: string): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   if (!REMOTE) return { ok: false, error: "Supabase no está configurado." };
   if (file.size > 50 * 1024 * 1024) return { ok: false, error: "El archivo pesa más de 50 MB. Para videos, pega un enlace de YouTube o Drive." };
-  const path = `${folder}/${Date.now()}-${safeName(file.name)}`;
+  if (!ALLOWED_TYPES.test(file.type)) return { ok: false, error: "Tipo de archivo no permitido. Sube imágenes, PDF, video o documentos de Office." };
+  // Cada desarrolladora sube a su carpeta (<orgId>/...): así lo exige la política del bucket.
+  const { data: org } = await sb().rpc("me_org");
+  const root = typeof org === "string" && /^[A-Za-z0-9_-]+$/.test(org) ? org : "umbral";
+  const path = `${root}/${folder.replace(/[^a-z0-9-]/gi, "")}/${Date.now()}-${safeName(file.name)}`;
   const { error } = await sb().storage.from("material").upload(path, file, { contentType: file.type || undefined, upsert: false });
   if (error) return { ok: false, error: "No se pudo subir el archivo." };
   return { ok: true, url: sb().storage.from("material").getPublicUrl(path).data.publicUrl };

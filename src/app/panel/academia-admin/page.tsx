@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { cleanUrl } from "@/lib/sanitize";
 import { toast } from "sonner";
 import { PencilSimple, Trash } from "@phosphor-icons/react";
 import type { Course, CourseKind } from "@/lib/types";
@@ -19,6 +20,7 @@ export default function AcademiaAdmin() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!f || f.title.trim().length < 5) return toast.error("Escribe un título.");
+    if (f.url && !cleanUrl(f.url)) return toast.error("El enlace no es válido. Pega una dirección que empiece con https://");
     saveCourse(me!, { ...f, title: f.title.trim(), summary: f.summary.trim(), body: f.body.trim() });
     toast.success("Guardado en la academia");
     setF(null);

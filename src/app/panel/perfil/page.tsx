@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { cleanUrl, isEmail } from "@/lib/sanitize";
 import { toast } from "sonner";
 import type { Org } from "@/lib/types";
 import { saveOrg, useDB, useSessionUser } from "@/lib/db";
@@ -59,7 +60,7 @@ export default function Perfil() {
           <p className="font-semibold">Verificación y sello verde</p>
           <p className="text-ink-2">{f.seal ? "Tu desarrolladora tiene el sello verde." : "Aún no tienes el sello verde."} Cumples {f.trust.filter((t) => t.ok).length} de {f.trust.length} criterios de confianza. Los revisa el administrador de Umbral con tus documentos.</p>
         </section>
-        <div className="flex justify-end"><Button onClick={() => { saveOrg(me, f); toast.success("Perfil actualizado"); }}>Guardar perfil</Button></div>
+        <div className="flex justify-end"><Button onClick={() => { if (f.website && !cleanUrl(f.website)) return toast.error("El sitio web no es válido."); if (f.email && !isEmail(f.email)) return toast.error("El correo no es válido."); saveOrg(me, f); toast.success("Perfil actualizado"); }}>Guardar perfil</Button></div>
       </div>
     </Guard>
   );

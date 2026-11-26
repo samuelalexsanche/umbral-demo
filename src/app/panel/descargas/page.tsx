@@ -39,7 +39,7 @@ export default function Descargas() {
             const external = /^https?:/.test(m.url);
             const d = db.developments.find((x) => x.id === m.developmentId);
             return (
-              <a key={m.id} href={asset(m.url)} target="_blank" rel="noopener" download={!external || undefined} className="lift grid overflow-hidden rounded-[14px] border border-line bg-card">
+              <a key={m.id} href={asset(m.url)} target="_blank" rel="noopener noreferrer" download={!external || undefined} className="lift grid overflow-hidden rounded-[14px] border border-line bg-card">
                 <div className="relative aspect-[4/3] overflow-hidden bg-sunk">
                   {m.thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element

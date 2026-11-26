@@ -1,0 +1,18 @@
+# Cabeceras de seguridad para Cloudflare Pages / Netlify (GitHub Pages ignora este archivo).
+# La CSP completa va en la etiqueta <meta> de cada página; aquí se agregan las que solo funcionan como cabecera.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+
+/panel/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
+/acceso/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store

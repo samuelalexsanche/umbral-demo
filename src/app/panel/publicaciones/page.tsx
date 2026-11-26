@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { cleanUrl } from "@/lib/sanitize";
 import { toast } from "sonner";
 import { PencilSimple, Trash, UploadSimple, Eye } from "@phosphor-icons/react";
 import type { Article, ArticleCategory } from "@/lib/types";
@@ -45,6 +46,7 @@ export default function Publicaciones() {
     if (f.title.trim().length < 8) return toast.error("Escribe un título de al menos 8 caracteres.");
     if (f.summary.trim().length < 20) return toast.error("Escribe un resumen de al menos 20 caracteres.");
     if (["mercado", "financieras", "global"].includes(f.category) && !f.source?.trim()) return toast.error("Las noticias de mercado y financieras llevan fuente.");
+    if (f.sourceUrl && !cleanUrl(f.sourceUrl)) return toast.error("El enlace a la fuente no es válido. Pega una dirección que empiece con https://");
     saveArticle(me!, { ...f, title: f.title.trim(), summary: f.summary.trim(), body: f.body.trim() });
     toast.success(f.published ? "Publicado" : "Guardado como borrador");
     setF(null);

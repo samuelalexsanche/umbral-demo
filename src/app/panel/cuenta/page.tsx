@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { toast } from "sonner";
-import { changePassword, roleLabel, updateUser, useDB, useSessionUser } from "@/lib/db";
+import { changePassword, passwordProblem, roleLabel, updateUser, useDB, useSessionUser } from "@/lib/db";
 import { Avatar, Button, Field, Input, Textarea } from "@/components/ui";
 import { PageHead } from "@/components/panel/Shell";
 
@@ -17,7 +17,8 @@ export default function Cuenta() {
   const setProf = (k: keyof typeof prof) => (e: { target: { value: string } }) => setP({ ...prof, [k]: e.target.value });
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (a.length < 8) return setErr("Usa al menos 8 caracteres.");
+    const problem = passwordProblem(a);
+    if (problem) return setErr(problem);
     if (a !== b) return setErr("Las contraseñas no coinciden.");
     const r = await changePassword(me!.id, a);
     if (!r.ok) return setErr(r.error ?? "No se pudo cambiar.");

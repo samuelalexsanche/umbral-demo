@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { cleanUrl } from "@/lib/sanitize";
 import { toast } from "sonner";
 import { Trash, UploadSimple } from "@phosphor-icons/react";
 import type { MaterialKind } from "@/lib/types";
@@ -35,6 +36,7 @@ export default function Materiales() {
     e.preventDefault();
     if (f.title.trim().length < 3) return toast.error("Escribe un título.");
     if (!f.url.trim()) return toast.error("Sube un archivo o pega un enlace.");
+    if (!cleanUrl(f.url)) return toast.error("El enlace no es válido. Pega una dirección que empiece con https://");
     saveMaterial(me!, { orgId: f.orgId || orgs[0]?.id, developmentId: f.developmentId || undefined, kind: f.kind, title: f.title.trim(), url: f.url.trim(), thumb: f.thumb || undefined });
     toast.success("Material publicado para los asesores");
     setOpen(false);
@@ -50,7 +52,7 @@ export default function Materiales() {
             <tbody>
               {list.map((m) => (
                 <tr key={m.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3"><a href={asset(m.url)} target="_blank" rel="noopener" className="flex items-center gap-3 font-semibold hover:underline">
+                  <td className="px-4 py-3"><a href={asset(m.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 font-semibold hover:underline">
                     {m.thumb ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={asset(m.thumb)} alt="" className="h-10 w-14 rounded-[6px] object-cover" />

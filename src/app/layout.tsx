@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { BASE, SITE } from "@/lib/format";
+import { CSP } from "@/lib/csp";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage" });
 const sans = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
@@ -24,6 +25,11 @@ export const viewport: Viewport = { themeColor: "#f3f3ef", width: "device-width"
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-MX" className={`${display.variable} ${sans.variable}`}>
+      <head>
+        {/* GitHub Pages no deja poner cabeceras: la política va aquí. En Cloudflare Pages también se manda por public/_headers. */}
+        <meta httpEquiv="Content-Security-Policy" content={CSP} />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+      </head>
       <body className="min-h-dvh">
         {children}
         <Toaster position="bottom-center" toastOptions={{ style: { fontFamily: "var(--font-sans)", borderRadius: 12 } }} />

@@ -25,6 +25,7 @@ function shrinkImage(file: File, max = 1600): Promise<string> {
 
 export async function uploadFile(file: File, folder: string): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   if (REMOTE) return uploadToStorage(file, folder);
+  if (file.type === "image/svg+xml") return { ok: false, error: "Sube la imagen en JPG, PNG o WebP." };
   if (file.type.startsWith("image/")) return { ok: true, url: await shrinkImage(file) };
   if (file.size > LOCAL_LIMIT) return { ok: false, error: "En modo local solo se pueden subir imágenes o archivos de menos de 1.5 MB. Pega un enlace (Drive, Dropbox) en su lugar." };
   return new Promise((resolve) => {

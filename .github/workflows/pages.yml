@@ -21,10 +21,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Variables del repositorio (Settings → Secrets and variables → Actions → Variables).
+          # Vacías = modo local. Con las de Supabase, el sitio usa la base real.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://samuelalexsanche.github.io' }}
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:

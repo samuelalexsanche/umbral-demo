@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { safeUrl } from "@/lib/sanitize";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, CurrencyDollar } from "@phosphor-icons/react";
 import type { Article, ArticleCategory } from "@/lib/types";
@@ -180,7 +181,7 @@ export function ArticleView({ id }: { id: string }) {
       </div>
       {(a.source || a.sourceUrl) && (
         <p className="border-t border-line pt-4 text-sm text-ink-3">
-          Fuente: {a.sourceUrl ? <a href={a.sourceUrl} target="_blank" rel="noopener" className="inline-flex items-center gap-1 font-semibold text-ink hover:underline">{a.source || a.sourceUrl} <ArrowUpRight size={13} /></a> : a.source}
+          Fuente: {a.sourceUrl ? <a href={safeUrl(a.sourceUrl) || undefined} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-ink hover:underline">{a.source || a.sourceUrl} <ArrowUpRight size={13} /></a> : a.source}
         </p>
       )}
       <div className="flex flex-wrap gap-2">

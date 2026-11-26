@@ -6,6 +6,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { SEED, seedDB } from "./seed";
 import { REMOTE } from "./backend";
 import { adminUsers, loadAll, pushDiff, rpc, sb } from "./supabase";
+import { cleanEmail, cleanLine, cleanPhone, cleanText, isEmail, isPhone, scrub } from "./sanitize";
 import type { Activity, AdvisorApplication, Article, AsesorTipo, BankRate, Course, DB, Development, Lead, Listing, Material, Org, PlatformRequest, Role, User } from "./types";
 
 const KEY = "umbral-db";
@@ -140,7 +141,12 @@ function mutate(fn: (db: DB) => void) {
     });
 }
 
-export const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
+/** Identificador con azar criptográfico (no adivinable). */
+export const uid = (p: string) => {
+  const b = new Uint8Array(8);
+  globalThis.crypto.getRandomValues(b);
+  return `${p}-${Array.from(b, (x) => x.toString(36).padStart(2, "0")).join("").slice(0, 12)}`;
+};
 export const now = () => new Date().toISOString();
 
 export function slugify(s: string) {
@@ -197,10 +203,27 @@ export function useSessionUser(): User | null {
 
 type LoginResult = { ok: true; user: User } | { ok: false; error: string };
 
+// Freno de intentos en este navegador: tras 5 fallos seguidos espera 1 minuto.
+// El freno real lo pone Supabase Auth (límite por IP); este evita martillar desde la pantalla.
+let fails = 0;
+let lockedUntil = 0;
+const failed = (): LoginResult => {
+  fails += 1;
+  if (fails >= 5) {
+    lockedUntil = Date.now() + 60_000;
+    fails = 0;
+  }
+  return { ok: false, error: "El correo o la contraseña no coinciden." };
+};
+
 export async function login(email: string, password: string): Promise<LoginResult> {
+  if (Date.now() < lockedUntil) return { ok: false, error: "Demasiados intentos. Espera un minuto e intenta de nuevo." };
+  email = cleanEmail(email);
+  if (!isEmail(email) || !password || password.length > 128) return failed();
   if (REMOTE) {
-    const { data, error } = await sb().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-    if (error || !data.user) return { ok: false, error: "El correo o la contraseña no coinciden." };
+    const { data, error } = await sb().auth.signInWithPassword({ email, password });
+    if (error || !data.user) return failed();
+    fails = 0;
     await refresh();
     const u = load().users.find((x) => x.id === data.user.id);
     if (!u || !u.active) {
@@ -214,8 +237,9 @@ export async function login(email: string, password: string): Promise<LoginResul
     }
     return { ok: true, user: u };
   }
-  const u = load().users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
-  if (!u || u.password !== password) return { ok: false, error: "El correo o la contraseña no coinciden." };
+  const u = load().users.find((x) => x.email.toLowerCase() === email);
+  if (!u || u.password !== password) return failed();
+  fails = 0;
   if (!u.active) return { ok: false, error: "Esta cuenta está desactivada. Pide a tu administrador que la reactive." };
   const org = u.orgId ? load().orgs.find((o) => o.id === u.orgId) : null;
   if (org && org.status === "suspendida") return { ok: false, error: `${org.name} está suspendida en la plataforma.` };
@@ -348,7 +372,7 @@ export function useOrgTeam(orgId?: string): TeamMember[] {
 
 /* ─── Bitácora ───────────────────────────────────────────────── */
 function log(db: DB, actor: User, text: string, orgId?: string) {
-  const a: Activity = { id: uid("ac"), at: now(), userId: actor.id, orgId: orgId ?? actor.orgId, text };
+  const a: Activity = { id: uid("ac"), at: now(), userId: actor.id, orgId: orgId ?? actor.orgId, text: cleanText(text, 500) };
   db.activity.unshift(a);
   db.activity = db.activity.slice(0, 200);
 }
@@ -356,7 +380,9 @@ function log(db: DB, actor: User, text: string, orgId?: string) {
 /* ─── Usuarios ───────────────────────────────────────────────── */
 export function tempPassword() {
   const w = ["casa", "patio", "llave", "nogal", "teja", "jardin", "cantera", "roble"];
-  return `${w[Math.floor(Math.random() * w.length)]}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const r = new Uint32Array(3);
+  globalThis.crypto.getRandomValues(r);
+  return `${w[r[0] % w.length]}-${1000 + (r[1] % 9000)}-${r[2].toString(36).slice(0, 4)}`;
 }
 
 export type NewUser = { name: string; email: string; phone: string; title: string; role: Role; orgId?: string; asesorTipo?: AsesorTipo; company?: string };
@@ -372,6 +398,10 @@ export async function createUser(actor: User, data: NewUser): Promise<Created> {
   }
   const db = load();
   if (actor.role !== "superadmin") return { ok: false, error: "Solo el administrador general da de alta usuarios." };
+  data = { ...scrub(data), email: cleanEmail(data.email), phone: cleanPhone(data.phone) };
+  if (cleanLine(data.name).length < 3) return { ok: false, error: "Escribe nombre y apellido." };
+  if (!isEmail(data.email)) return { ok: false, error: "Correo inválido." };
+  if (!["superadmin", "desarrolladora", "asesor"].includes(data.role)) return { ok: false, error: "Rol inválido." };
   if (db.users.some((x) => x.email.toLowerCase() === data.email.trim().toLowerCase())) return { ok: false, error: "Ya existe un usuario con ese correo." };
   if (data.role === "desarrolladora" && !data.orgId) return { ok: false, error: "Elige la desarrolladora a la que pertenece." };
   if (data.orgId && !db.orgs.some((o) => o.id === data.orgId)) return { ok: false, error: "La desarrolladora no existe." };
@@ -402,13 +432,13 @@ export async function createUser(actor: User, data: NewUser): Promise<Created> {
 
 export function updateUser(actor: User, id: string, patch: Partial<User>) {
   if (actor.role !== "superadmin" && actor.id !== id) return;
-  // Nadie cambia su propio rol ni su tipo de asesor desde su perfil.
-  if (actor.role !== "superadmin") {
-    delete patch.role;
-    delete patch.asesorTipo;
-    delete patch.orgId;
-    delete patch.active;
-  }
+  // Nadie cambia su propio rol, tipo, desarrolladora, estado, correo ni contraseña desde su perfil:
+  // solo pasan los campos de perfil de esta lista.
+  const SELF: (keyof User)[] = ["name", "phone", "mobile", "title", "company", "bio", "photo"];
+  const ADMIN: (keyof User)[] = [...SELF, "role", "asesorTipo", "orgId", "active"];
+  const allowed = new Set(actor.role === "superadmin" ? ADMIN : SELF);
+  patch = scrub(Object.fromEntries(Object.entries(patch).filter(([k]) => allowed.has(k as keyof User))) as Partial<User>);
+  if (patch.name !== undefined && patch.name.length < 2) return;
   mutate((d) => {
     const u = d.users.find((x) => x.id === id);
     if (!u) return;
@@ -417,7 +447,18 @@ export function updateUser(actor: User, id: string, patch: Partial<User>) {
   });
 }
 
+/** Regla de contraseñas: 10+ caracteres, con letras y números. La misma que exige Supabase Auth. */
+export function passwordProblem(pw: string): string | null {
+  if (pw.length < 10) return "Usa al menos 10 caracteres.";
+  if (pw.length > 72) return "Usa máximo 72 caracteres.";
+  if (!/[a-zA-ZÀ-ÿ]/.test(pw) || !/\d/.test(pw)) return "Combina letras y números.";
+  if (/^(.)\1+$/.test(pw) || /^(demo|umbral|password|contrase)/i.test(pw)) return "Esa contraseña es muy fácil de adivinar.";
+  return null;
+}
+
 export async function changePassword(userId: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  const problem = passwordProblem(password);
+  if (problem) return { ok: false, error: problem };
   if (REMOTE) {
     const { error } = await sb().auth.updateUser({ password });
     if (error) return { ok: false, error: error.message.includes("different") ? "Usa una contraseña distinta a la anterior." : "No se pudo cambiar la contraseña." };
@@ -435,13 +476,18 @@ export async function changePassword(userId: string, password: string): Promise<
 /* ─── Inmuebles ──────────────────────────────────────────────── */
 export function saveListing(actor: User, data: Omit<Listing, "id" | "slug" | "views" | "createdAt" | "updatedAt" | "createdBy"> & { id?: string }) {
   if (!can.editListing(actor, data)) return null;
+  data = scrub(data);
+  if (!data.title || data.title.length < 3) return null;
+  data.price = Math.max(0, Math.min(2_000_000_000, data.price || 0));
   let saved: Listing | null = null;
   mutate((d) => {
     if (data.id) {
       const l = d.listings.find((x) => x.id === data.id);
       if (!l) return;
       const prevStatus = l.status;
-      Object.assign(l, data, { updatedAt: now() });
+      const { id: _i, ...rest } = data as Listing;
+      void _i;
+      Object.assign(l, rest, { id: l.id, slug: l.slug, views: l.views, createdAt: l.createdAt, createdBy: l.createdBy, updatedAt: now() });
       saved = l;
       log(d, actor, prevStatus !== l.status ? `cambió ${l.title} a ${l.status}` : `editó ${l.title}`, l.orgId);
     } else {
@@ -465,7 +511,7 @@ export function saveListing(actor: User, data: Omit<Listing, "id" | "slug" | "vi
 export function setListingStatus(actor: User, id: string, status: Listing["status"]) {
   mutate((d) => {
     const l = d.listings.find((x) => x.id === id);
-    if (!l || !can.editListing(actor, l)) return;
+    if (!l || !can.editListing(actor, l) || !["publicado", "borrador", "pausado", "vendido"].includes(status)) return;
     l.status = status;
     l.updatedAt = now();
     const verb: Record<string, string> = { publicado: "publicó", borrador: "regresó a borrador", pausado: "pausó", vendido: "marcó como vendido" };
@@ -499,10 +545,13 @@ export function addView(id: string) {
 /* ─── Desarrollos y organizaciones ───────────────────────────── */
 export function saveDevelopment(actor: User, data: Omit<Development, "id" | "slug" | "createdAt"> & { id?: string }) {
   if (!can.manageDevelopments(actor, data.orgId)) return;
+  data = scrub(data);
+  if (!data.name || data.name.length < 2) return;
+  data.progress = Math.max(0, Math.min(100, Math.round(data.progress || 0)));
   mutate((d) => {
     if (data.id) {
       const dev = d.developments.find((x) => x.id === data.id);
-      if (dev) Object.assign(dev, data);
+      if (dev) Object.assign(dev, data, { id: dev.id, slug: dev.slug, createdAt: dev.createdAt, orgId: actor.role === "superadmin" ? data.orgId : dev.orgId });
       log(d, actor, `editó el desarrollo ${data.name}`, data.orgId);
     } else {
       d.developments.push({ ...data, id: uid("dev"), slug: uniqueSlug(data.name, d.developments.map((x) => x.slug)), createdAt: now() });
@@ -513,6 +562,10 @@ export function saveDevelopment(actor: User, data: Omit<Development, "id" | "slu
 
 export function saveOrg(actor: User, data: Partial<Org> & { id?: string; name: string }) {
   if (data.id ? !can.editOrgProfile(actor, data.id) : !can.manageOrgs(actor)) return null;
+  data = scrub(data);
+  if (!data.name || data.name.length < 2) return null;
+  if (data.email && !isEmail(data.email)) delete data.email;
+  if (data.color && !/^#[0-9a-f]{6}$/i.test(data.color)) delete data.color;
   // Solo el administrador otorga el sello y la verificación.
   if (actor.role !== "superadmin") {
     delete data.seal;
@@ -524,7 +577,7 @@ export function saveOrg(actor: User, data: Partial<Org> & { id?: string; name: s
   mutate((d) => {
     if (data.id) {
       const o = d.orgs.find((x) => x.id === data.id);
-      if (o) Object.assign(o, data);
+      if (o) Object.assign(o, data, { id: o.id, slug: o.slug, createdAt: o.createdAt });
       log(d, actor, `actualizó el perfil de ${data.name}`, data.id);
     } else {
       const o: Org = {
@@ -571,6 +624,12 @@ function nextInterno(d: DB): string | undefined {
 }
 
 export async function createLead(data: Omit<Lead, "id" | "status" | "notes" | "createdAt" | "asesorId">): Promise<boolean> {
+  data = scrub(data);
+  data.name = cleanLine(data.name, 120);
+  data.phone = cleanPhone(data.phone);
+  data.email = cleanEmail(data.email ?? "");
+  if (data.name.length < 2 || !isPhone(data.phone) || (data.email && !isEmail(data.email))) return false;
+  if (Array.isArray(data.transcript)) data.transcript = data.transcript.slice(-40);
   if (REMOTE) {
     try {
       await rpc("create_lead", { payload: data });
@@ -588,29 +647,41 @@ export async function createLead(data: Omit<Lead, "id" | "status" | "notes" | "c
 }
 
 export function updateLead(actor: User, id: string, patch: Partial<Lead>, note?: string) {
+  // Quien ve el prospecto cambia su etapa; solo el administrador lo reasigna.
+  const allowed = new Set<string>(can.reassignLead(actor) ? ["status", "asesorId"] : ["status"]);
+  patch = Object.fromEntries(Object.entries(patch).filter(([k]) => allowed.has(k))) as Partial<Lead>;
+  if (patch.status && !["nuevo", "contactado", "cita", "apartado", "cerrado", "descartado"].includes(patch.status)) delete patch.status;
+  const text = note ? cleanText(note, 2000) : "";
   mutate((d) => {
     const l = d.leads.find((x) => x.id === id);
-    if (!l) return;
+    if (!l || !can.seeLead(actor, l)) return;
     Object.assign(l, patch);
-    if (note) l.notes.push({ at: now(), by: actor.id, text: note });
+    if (text) l.notes.push({ at: now(), by: actor.id, text });
     if (patch.status) log(d, actor, `movió el prospecto de ${l.name} a ${patch.status}`, l.orgId);
     if (patch.asesorId) log(d, actor, `reasignó el prospecto de ${l.name}`, l.orgId);
   });
 }
 
-export async function addPlatformRequest(r: Omit<PlatformRequest, "id" | "createdAt">) {
+export async function addPlatformRequest(r: Omit<PlatformRequest, "id" | "createdAt">): Promise<boolean> {
+  r = scrub(r);
   if (REMOTE) {
-    const id = uid("rq");
-    await sb().from("requests").insert({ id, data: { ...r, id, createdAt: now() } });
-    return;
+    try {
+      await rpc("submit_request", { payload: r });
+      return true;
+    } catch {
+      return false;
+    }
   }
   mutate((d) => {
     d.requests.unshift({ ...r, id: uid("rq"), createdAt: now() });
   });
+  return true;
 }
 
 export function addAmenity(actor: User, name: string) {
   if (!can.manageCatalogs(actor)) return;
+  name = cleanLine(name, 60);
+  if (name.length < 2) return;
   mutate((d) => {
     if (!d.amenities.includes(name)) d.amenities.push(name);
     log(d, actor, `agregó la amenidad ${name} al catálogo`);
@@ -619,6 +690,13 @@ export function addAmenity(actor: User, name: string) {
 
 /* ─── Asesores: solicitudes ──────────────────────────────────── */
 export async function submitApplication(a: Omit<AdvisorApplication, "id" | "status" | "createdAt">): Promise<{ ok: true } | { ok: false; error: string }> {
+  a = scrub(a);
+  a.email = cleanEmail(a.email);
+  a.phone = cleanPhone(a.phone);
+  if (cleanLine(a.name).length < 5 || !isEmail(a.email) || !isPhone(a.phone)) return { ok: false, error: "Revisa tu nombre, correo y teléfono." };
+  // Nadie se cuela por aquí a un equipo: la pertenencia solo la pide la desarrolladora.
+  delete (a as Partial<AdvisorApplication>).orgId;
+  delete (a as Partial<AdvisorApplication>).requestedBy;
   if (REMOTE) {
     try {
       return await rpc<{ ok: true } | { ok: false; error: string }>("submit_application", { payload: a });
@@ -639,8 +717,13 @@ export async function submitApplication(a: Omit<AdvisorApplication, "id" | "stat
 /** La desarrolladora pide al administrador dar de alta a un asesor de su equipo. */
 export async function requestTeamMember(actor: User, a: { name: string; email: string; phone: string; title: string; message: string }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!can.requestTeam(actor)) return { ok: false, error: "Solo una desarrolladora puede pedir altas para su equipo." };
+  a = scrub(a);
+  a.phone = cleanPhone(a.phone);
+  if (cleanLine(a.name).length < 3) return { ok: false, error: "Escribe nombre y apellido." };
+  if (!isEmail(a.email)) return { ok: false, error: "Escribe un correo válido." };
+  if (!isPhone(a.phone)) return { ok: false, error: "Escribe un teléfono válido." };
   const db = load();
-  const email = a.email.trim().toLowerCase();
+  const email = cleanEmail(a.email);
   if (db.users.some((x) => x.email === email)) return { ok: false, error: "Ese correo ya tiene acceso a la plataforma." };
   if (db.applications.some((x) => x.email === email && x.status === "pendiente")) return { ok: false, error: "Ya hay una solicitud pendiente con ese correo." };
   const org = db.orgs.find((o) => o.id === actor.orgId);
@@ -666,8 +749,9 @@ export async function requestTeamMember(actor: User, a: { name: string; email: s
  * Si la solicitud viene de una desarrolladora, el asesor queda como miembro de ella.
  */
 export async function approveApplication(actor: User, id: string, tipo: AsesorTipo, accessEmail: string): Promise<Created> {
-  const email = accessEmail.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "Asigna un correo de acceso válido." };
+  const email = cleanEmail(accessEmail);
+  if (!isEmail(email)) return { ok: false, error: "Asigna un correo de acceso válido." };
+  if (tipo !== "interno" && tipo !== "externo") return { ok: false, error: "Elige el tipo de acceso." };
   if (REMOTE) {
     const r = await adminUsers<Created>({ action: "approve", applicationId: id, tipo, email });
     if (r.ok) await refresh();
@@ -691,7 +775,7 @@ export function rejectApplication(actor: User, id: string, note: string) {
   mutate((d) => {
     const x = d.applications.find((y) => y.id === id);
     if (!x) return;
-    Object.assign(x, { status: "rechazada", reviewedBy: actor.id, reviewedAt: now(), reviewNote: note });
+    Object.assign(x, { status: "rechazada", reviewedBy: actor.id, reviewedAt: now(), reviewNote: cleanText(note, 1000) });
     log(d, actor, `rechazó la solicitud de ${x.name}`, x.orgId);
   });
 }
@@ -699,6 +783,7 @@ export function rejectApplication(actor: User, id: string, note: string) {
 /* ─── Tasas bancarias ────────────────────────────────────────── */
 export function saveBank(actor: User, b: Omit<BankRate, "id" | "updatedAt"> & { id?: string }) {
   if (actor.role !== "superadmin") return;
+  b = scrub(b);
   mutate((d) => {
     if (b.id) {
       const x = d.banks.find((y) => y.id === b.id);
@@ -718,12 +803,14 @@ export function deleteBank(actor: User, id: string) {
 /* ─── Noticias y publicaciones ───────────────────────────────── */
 export function saveArticle(actor: User, a: Omit<Article, "id" | "slug" | "createdBy"> & { id?: string }) {
   if (!can.postForOrg(actor, a.orgId) && !(actor.role === "superadmin")) return null;
+  a = scrub(a);
+  if (!a.title || a.title.length < 3) return null;
   let saved: Article | null = null;
   mutate((d) => {
     if (a.id) {
       const x = d.articles.find((y) => y.id === a.id);
-      if (!x) return;
-      Object.assign(x, a);
+      if (!x || !(actor.role === "superadmin" || can.postForOrg(actor, x.orgId))) return;
+      Object.assign(x, a, { id: x.id, slug: x.slug, createdBy: x.createdBy });
       saved = x;
       log(d, actor, `editó la publicación ${a.title}`, a.orgId);
     } else {
@@ -747,10 +834,12 @@ export function deleteArticle(actor: User, id: string) {
 /* ─── Material descargable ───────────────────────────────────── */
 export function saveMaterial(actor: User, m: Omit<Material, "id" | "createdAt"> & { id?: string }) {
   if (!can.manageMaterials(actor, m.orgId)) return;
+  m = scrub(m);
+  if (!m.url || !m.title) return;
   mutate((d) => {
     if (m.id) {
       const x = d.materials.find((y) => y.id === m.id);
-      if (x) Object.assign(x, m);
+      if (x && can.manageMaterials(actor, x.orgId)) Object.assign(x, m, { id: x.id, createdAt: x.createdAt });
     } else d.materials.unshift({ ...m, id: uid("m"), createdAt: now() });
     log(d, actor, `subió material: ${m.title}`, m.orgId);
   });
@@ -767,10 +856,12 @@ export function deleteMaterial(actor: User, id: string) {
 /* ─── Academia ───────────────────────────────────────────────── */
 export function saveCourse(actor: User, c: Omit<Course, "id" | "createdAt"> & { id?: string }) {
   if (!(actor.role === "superadmin" || (c.orgId && can.postForOrg(actor, c.orgId)))) return;
+  c = scrub(c);
+  if (!c.title) return;
   mutate((d) => {
     if (c.id) {
       const x = d.courses.find((y) => y.id === c.id);
-      if (x) Object.assign(x, c);
+      if (x) Object.assign(x, c, { id: x.id, createdAt: x.createdAt });
     } else d.courses.unshift({ ...c, id: uid("c"), createdAt: now() });
     log(d, actor, `guardó en academia: ${c.title}`, c.orgId);
   });

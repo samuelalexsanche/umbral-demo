@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react";
 import { addPlatformRequest } from "@/lib/db";
+import { isEmail } from "@/lib/sanitize";
 import { Button, Field, Input, Select } from "@/components/ui";
 
 export default function RequestForm() {
   const [f, setF] = useState({ company: "", name: "", phone: "", email: "", units: "" });
+  const [trap, setTrap] = useState("");
   const [err, setErr] = useState<Record<string, string>>({});
   const [ok, setOk] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
@@ -15,10 +17,12 @@ export default function RequestForm() {
     if (f.company.trim().length < 2) er.company = "Escribe el nombre de tu desarrolladora.";
     if (f.name.trim().length < 2) er.name = "Escribe tu nombre.";
     if (f.phone.replace(/\D/g, "").length < 10) er.phone = "Escribe un teléfono de 10 dígitos.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email)) er.email = "Revisa el correo.";
+    if (!isEmail(f.email)) er.email = "Revisa el correo.";
     setErr(er);
     if (Object.keys(er).length) return;
-    await addPlatformRequest(f);
+    // Campo trampa: las personas no lo ven; los bots que llenan todo, sí. A ellos se les responde "recibido" sin guardar.
+    if (trap) return setOk(true);
+    if (!(await addPlatformRequest(f))) return setErr({ email: "No se pudo enviar. Intenta de nuevo en unos minutos." });
     setOk(true);
   }
   if (ok)
@@ -32,6 +36,7 @@ export default function RequestForm() {
   return (
     <form onSubmit={submit} noValidate className="grid gap-4 rounded-[18px] border border-line bg-card p-6 sm:p-8">
       <p className="font-display text-2xl font-semibold">Solicitar información</p>
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={trap} onChange={(e) => setTrap(e.target.value)} className="absolute -left-[9999px] h-px w-px opacity-0" />
       <Field label="Desarrolladora" htmlFor="r-co" error={err.company}><Input id="r-co" value={f.company} onChange={set("company")} aria-invalid={!!err.company} /></Field>
       <Field label="Contacto" htmlFor="r-n" error={err.name}><Input id="r-n" autoComplete="name" value={f.name} onChange={set("name")} aria-invalid={!!err.name} /></Field>
       <div className="grid gap-4 sm:grid-cols-2">

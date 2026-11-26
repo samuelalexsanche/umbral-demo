@@ -15,6 +15,8 @@ export function buildPayload(db: DB, org: Org, messages: ChatMsg[], context?: st
   const listings = db.listings.filter((l) => l.orgId === org.id && l.status === "publicado");
   const devs = db.developments.filter((d) => d.orgId === org.id);
   return {
+    // Con Supabase conectado al Worker, solo se usa orgId: el Worker lee los datos de la base e ignora el resto.
+    orgId: org.id,
     org: {
       name: org.name,
       kind: "desarrolladora",
